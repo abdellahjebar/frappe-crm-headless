@@ -8,13 +8,19 @@
  * deviates from the standard spec.
  */
 import { config } from '@/config'
+import { validate } from '@/api/schemas'
 
 const TOKEN_KEY = 'crm_token'
 const USER_KEY  = 'crm_user'
 
 const getToken = () => localStorage.getItem(TOKEN_KEY)
 const setToken = (t) => localStorage.setItem(TOKEN_KEY, t)
-const clearAuth = () => { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(USER_KEY) }
+const clearAuth = () => {
+  localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(USER_KEY)
+  // Notify the app so the router can redirect to login
+  window.dispatchEvent(new CustomEvent('crm:auth:expired'))
+}
 
 // ─── Doctype → REST path ─────────────────────────────────────────────────────
 
@@ -334,10 +340,12 @@ function mapToREST(endpoint, data, params) {
     case 'crm.demo.api.clear_demo_data':
       return null
 
-    // ── Unknown — pass through ────────────────────────────────────────────────
+    // ── Unknown — throw so integration gaps surface immediately ──────────────
     default:
-      console.warn(`[crm-ui] Unmapped endpoint: "${endpoint}" — passing through as-is`)
-      return { method: method || 'POST', path: `/${endpoint}`, body: data }
+      throw new Error(
+        `[crm-ui] Unmapped endpoint: "${endpoint}"\n` +
+        'Add a case for it in src/api/adapters/rest.js or check API_SPEC.md.',
+      )
   }
 }
 
@@ -371,13 +379,19 @@ export const RESTAdapter = {
       body: mapped.body && mapped.method !== 'GET' ? JSON.stringify(mapped.body) : undefined,
     })
 
+    if (res.status === 401) {
+      clearAuth()
+      throw new Error('Session expired. Please log in again.')
+    }
+
     if (!res.ok) {
       const err = await res.json().catch(() => ({ message: res.statusText }))
       throw new Error(err.message || res.statusText)
     }
 
     const json = await res.json()
-    return { message: json }
+    const validated = validate(endpoint, json)
+    return { message: validated }
   },
 
   auth: {

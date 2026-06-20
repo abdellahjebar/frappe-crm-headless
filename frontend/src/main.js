@@ -74,6 +74,10 @@ function mountApp() {
   app.config.globalProperties.$socket = socket
   app.mount('#app')
 
+  window.addEventListener('crm:auth:expired', () => {
+    router.replace({ name: 'Login' })
+  })
+
   if (import.meta.env.DEV) {
     window.$dialog = createDialog
   }
