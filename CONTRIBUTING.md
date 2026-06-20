@@ -17,8 +17,8 @@ Thank you for your interest in contributing to CRM UI.
 ## Development Setup
 
 ```bash
-git clone https://github.com/your-username/crm-ui.git
-cd crm-ui/frontend
+git clone https://github.com/abdellahjebar/frappe-crm-headless.git
+cd frappe-crm-headless/frontend
 yarn install
 
 # Set dev user so you can see the UI without a backend

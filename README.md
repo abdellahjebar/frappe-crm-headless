@@ -41,8 +41,8 @@ This project strips that requirement. Keep the UI. Bring your own backend.
 ## Quick Start
 
 ```bash
-git clone https://github.com/your-username/crm-ui.git
-cd crm-ui/frontend
+git clone https://github.com/abdellahjebar/frappe-crm-headless.git
+cd frappe-crm-headless/frontend
 yarn install
 cp .env.example .env.development
 # Edit .env.development — set VITE_BACKEND_URL to your API
