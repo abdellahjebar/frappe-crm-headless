@@ -9,6 +9,7 @@ import translationPlugin from './translation'
 import App from './App.vue'
 import { setAdapter } from './api'
 import { RESTAdapter } from './api/adapters/rest'
+import { MockAdapter } from './api/adapters/mock/index.js'
 
 import {
   FrappeUI,
@@ -46,12 +47,14 @@ if (import.meta.env.VITE_DEV_USER) {
   document.cookie = `user_id=${import.meta.env.VITE_DEV_USER}; path=/`
 }
 
-// Wire up the REST adapter — translates all UI calls to your backend's REST API.
-// Set VITE_BACKEND_URL in your .env and implement the routes from API_SPEC.md.
-setAdapter(RESTAdapter)
+// Set VITE_MOCK=true to run with in-memory fake data (no backend needed).
+// Set VITE_BACKEND_URL in your .env and implement the routes from API_SPEC.md for production.
+const activeAdapter = import.meta.env.VITE_MOCK === 'true' ? MockAdapter : RESTAdapter
+
+setAdapter(activeAdapter)
 
 setConfig('resourceFetcher', (options) =>
-  RESTAdapter.request(options.method || 'GET', options.url, options.body, options.params),
+  activeAdapter.request(options.method || 'GET', options.url, options.body, options.params),
 )
 
 const pinia = createPinia()
