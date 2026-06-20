@@ -541,7 +541,7 @@ const steps = reactive([
 ])
 
 onMounted(async () => {
-  await users.promise
+  await users.promise.catch(() => {})
 
   const filteredSteps = steps.filter((step) => {
     if (step.condition) {

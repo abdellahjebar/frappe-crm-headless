@@ -497,6 +497,33 @@ Query params: `doctype`, `query`, `filters` (optional JSON).
 
 ## Files
 
+### `POST /api/method/upload_file`
+
+File uploads use multipart form data. This path is frappe-ui's default and is proxied to your backend automatically via Vite (dev) and Nginx (prod).
+
+```
+Content-Type: multipart/form-data
+
+Fields:
+  file          — the file binary
+  is_private    — 0 or 1
+  doctype       — e.g. "CRM Lead"
+  docname       — e.g. "LEAD-0001"
+  fieldname     — e.g. "image"
+```
+
+```json
+// Response
+{
+  "message": {
+    "name": "FILE-0001",
+    "file_url": "/files/photo.jpg",
+    "file_name": "photo.jpg",
+    "is_private": 0
+  }
+}
+```
+
 ### `GET /api/files/defaults`
 
 ```json

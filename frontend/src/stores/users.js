@@ -2,32 +2,35 @@ import { defineStore } from 'pinia'
 import { createResource } from 'frappe-ui'
 import { sessionStore } from './session'
 import { computed, reactive } from 'vue'
-import { useRouter } from 'vue-router'
 
 export const usersStore = defineStore('crm-users', () => {
   const session = sessionStore()
 
   let usersByName = reactive({})
-  const router = useRouter()
 
   const users = createResource({
     url: 'crm.api.session.get_users',
     cache: 'crm-users',
     initialData: [],
     auto: true,
-    transform([allUsers, crmUsers]) {
+    transform(data) {
+      // Frappe returns [allUsers, crmUsers] (array of two arrays).
+      // REST adapter returns a flat array of user objects.
+      let allUsers, crmUsers
+      if (Array.isArray(data) && Array.isArray(data[0])) {
+        ;[allUsers, crmUsers] = data
+      } else {
+        allUsers = Array.isArray(data) ? data : []
+        crmUsers = allUsers
+      }
+
       for (let user of allUsers) {
         usersByName[user.name] = user
-        if (user.name === 'Administrator') {
+        if (user.name === 'Administrator' && user.email) {
           usersByName[user.email] = user
         }
       }
       return { allUsers, crmUsers }
-    },
-    onError(error) {
-      if (error && error.exc_type === 'AuthenticationError') {
-        router.push('/login')
-      }
     },
   })
 
@@ -71,22 +74,19 @@ export const usersStore = defineStore('crm-users', () => {
 
   function getUserRole(email) {
     const user = getUser(email)
-    if (user && user.role) {
-      return user.role
-    }
-    return null
+    return user?.role || null
   }
 
   const isCrmUser = (user) => {
     user = user || session.user
-    if (!users.data?.crmUsers) return true // optimistic while data is loading
+    if (!users.data?.crmUsers) return true
     return users.data.crmUsers.find((u) => u.name === user)
   }
 
   return {
     users,
-    allUsers: computed(() => users.data.allUsers),
-    crmUsers: computed(() => users.data.crmUsers),
+    allUsers: computed(() => users.data?.allUsers || []),
+    crmUsers: computed(() => users.data?.crmUsers || []),
     getUser,
     isAdmin,
     isManager,
