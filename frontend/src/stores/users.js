@@ -79,7 +79,8 @@ export const usersStore = defineStore('crm-users', () => {
 
   const isCrmUser = (user) => {
     user = user || session.user
-    return users.data.crmUsers?.find((u) => u.name === user)
+    if (!users.data?.crmUsers) return true // optimistic while data is loading
+    return users.data.crmUsers.find((u) => u.name === user)
   }
 
   return {

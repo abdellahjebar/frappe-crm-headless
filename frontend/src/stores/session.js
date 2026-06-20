@@ -1,40 +1,27 @@
 import { defineStore } from 'pinia'
-import { createResource } from 'frappe-ui'
+import { getAdapter } from '@/api'
 import router from '@/router'
 import { ref, computed } from 'vue'
 
 export const sessionStore = defineStore('crm-session', () => {
-  function sessionUser() {
-    let cookies = new URLSearchParams(document.cookie.split('; ').join('&'))
-    let _sessionUser = cookies.get('user_id')
-    if (_sessionUser === 'Guest') {
-      _sessionUser = null
-    }
-    return _sessionUser
-  }
-
-  let user = ref(sessionUser())
+  let user = ref(import.meta.env.VITE_DEV_USER || getAdapter().auth.getUser())
   const isLoggedIn = computed(() => !!user.value)
 
-  const login = createResource({
-    url: 'login',
-    onError() {
-      throw new Error(__('Invalid Email or Password'))
-    },
-    onSuccess() {
-      user.value = sessionUser()
-      login.reset()
+  async function login(email, password) {
+    try {
+      await getAdapter().auth.login(email, password)
+      user.value = getAdapter().auth.getUser()
       router.replace({ path: '/' })
-    },
-  })
+    } catch {
+      throw new Error(__('Invalid Email or Password'))
+    }
+  }
 
-  const logout = createResource({
-    url: 'logout',
-    onSuccess() {
-      user.value = null
-      window.location.href = '/login?redirect-to=/crm'
-    },
-  })
+  async function logout() {
+    await getAdapter().auth.logout()
+    user.value = null
+    router.replace({ name: 'Login' })
+  }
 
   return {
     user,

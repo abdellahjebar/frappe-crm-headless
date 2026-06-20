@@ -1,22 +1,20 @@
 {
 	"private": true,
 	"type": "module",
-	"name": "crm",
-	"description": "Frappe CRM helps you work, not slow you down. Open-source, intuitive, and free from extra costs.",
+	"name": "crm-ui",
+	"version": "1.0.0",
+	"description": "Open-source CRM frontend — backend-agnostic, works with any REST API.",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/frappe/crm.git"
 	},
-	"homepage": "https://frappe.io/crm",
-	"author": "Frappe Technologies Pvt. Ltd.",
 	"license": "GPL-3.0",
-	"bugs": {
-		"url": "https://github.com/frappe/crm/issues"
-	},
 	"scripts": {
-		"postinstall": "cd frontend && yarn install --check-files",
+		"install": "cd frontend && yarn install",
 		"dev": "cd frontend && yarn dev",
 		"build": "cd frontend && yarn build",
-		"upgrade-frappeui": "cd frontend && yarn add frappe-ui@latest && cd .."
+		"preview": "cd frontend && yarn preview",
+		"test": "cd frontend && yarn test",
+		"test:run": "cd frontend && yarn test:run"
 	}
 }

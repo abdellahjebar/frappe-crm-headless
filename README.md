@@ -1,203 +1,255 @@
-<div align="center" markdown="1">
+# CRM UI
 
-<a href="https://frappe.io/products/crm">
-    <img src=".github/logo.svg" height="80" alt="Frappe CRM Logo">
-</a>
+**A production-grade CRM frontend that works with any backend.**
 
-<h1>Frappe CRM</h1>
+Built on top of [Frappe CRM](https://github.com/frappe/crm) — one of the most polished open-source CRM interfaces available — with the backend completely decoupled. Point it at your own API and get a fully functional CRM in minutes.
 
-**Simplify Sales, Amplify Relationships**
+> **v0.1 — Adapter Release.** The UI is complete and backend-agnostic via a pluggable adapter pattern. See the [roadmap](#roadmap) for the planned zero-adapter REST spec approach.
 
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/frappe/crm)](https://github.com/frappe/crm/releases)
+---
 
-<div>
-    <picture>
-        <source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/FrappeCRMHeroImage.png">
-        <img width="1402" alt="Frappe CRM Hero Image" src=".github/screenshots/FrappeCRMHeroImage.png">
-    </picture>
-</div>
+## Why
 
-[Live Demo](https://frappecrm-demo.frappe.cloud/api/method/crm.api.live_demo.login) - [Website](https://frappe.io/crm) - [Documentation](https://docs.frappe.io/crm)
+Frappe CRM has an exceptional UI. But running it requires the full Frappe framework — a heavy Python stack with its own database conventions, deployment model, and learning curve.
 
-</div>
+This project strips that requirement. Keep the UI. Bring your own backend.
 
-## Frappe CRM
+| | Frappe CRM | CRM UI |
+|---|---|---|
+| Backend required | Frappe + MariaDB + Redis | Any — Express, Django, Laravel, ASP.NET, Spring |
+| Auth | Frappe sessions | Your own auth |
+| Deployment | bench CLI | `yarn build` → static files |
+| UI | ✅ | ✅ identical |
 
-Frappe CRM is a simple, affordable, open-source CRM tool designed for modern sales teams with unlimited users. Frappe CRM is crafted for providing a great user experience, packed with features for core CRM activities helping you build strong customer relationships while keeping things clean and organised.
+---
 
-### Motivation
+## Features
 
-The motivation behind building Frappe CRM stems from the need for a simple, customizable, and open-source solution tailored to modern business needs. Many existing CRMs are either too complex, overly generic, or locked behind steep pricing models that hinder accessibility and flexibility. Frappe CRM was designed to bridge this gap, offering a tool that empowers businesses to manage their customer relationships seamlessly while being easy to adapt to specific workflows. Built on the Frappe framework, it prioritizes usability, extensibility, and affordability, making it an ideal choice for growing teams and organizations looking for a CRM that aligns with their unique processes.
+- **Leads** — list, kanban, group-by views with filters and sorting
+- **Deals** — pipeline management with stage tracking
+- **Contacts & Organizations** — full relationship management
+- **Activities** — calls, emails, notes, tasks in a unified timeline
+- **Dashboard** — charts and KPIs
+- **Calendar** — event and task scheduling
+- **Notifications** — real-time updates via WebSocket
+- **Dark / Light mode** — built-in theme switching
+- **Mobile responsive** — dedicated mobile layouts
+- **PWA** — installable on desktop and mobile
 
-### Key Features
+---
 
--   **User-Friendly and Flexible:** A simple, intuitive interface that’s easy to navigate and highly customizable, enabling teams to adapt it to their specific processes effortlessly.
--   **All-in-One Lead/Deal Page:** Consolidate all essential actions and details—like activities, comments, notes, tasks, and more—into a single page for a seamless workflow experience.
--   **Kanban View:** Manage leads and deals visually with a drag-and-drop Kanban board, offering clarity and efficiency in tracking progress across stages.
--   **Custom Views:** Design personalized views to organize and display leads and deals using custom filters, sorting, and columns, ensuring quick access to the most relevant information.
-
-    <details>
-    <summary>Screenshots</summary>
-
-    <div>
-        <picture>
-            <source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/LeadList.png">
-            <img width="1402" alt="Lead List" src=".github/screenshots/LeadList.png">
-        </picture>
-    </div>
-    <div>
-        <picture>
-            <source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/LeadPage.png">
-            <img width="1402" alt="Lead Page" src=".github/screenshots/LeadPage.png">
-        </picture>
-    </div>
-    <div>
-        <picture>
-            <source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/EmailTemplate.png">
-            <img width="1402" alt="Email Template" src=".github/screenshots/EmailTemplate.png">
-        </picture>
-    </div>
-    <div>
-        <picture>
-            <source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/CallUI.png">
-            <img width="1402" alt="Call UI" src=".github/screenshots/CallUI.png">
-        </picture>
-    </div>
-    <div>
-        <picture>
-            <source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/CallLog.png">
-            <img width="1402" alt="Call Log" src=".github/screenshots/CallLog.png">
-        </picture>
-    </div>
-
-    </details>
-
-### Integrations
-
--   **Twilio:** Integrate Twilio to make and receive calls from the CRM. You can also record calls. It is a built-in integration.
--   **Exotel:** Integrate Exotel to make and receive calls via agents mobile phone from the CRM. You can also record calls. It is a built-in integration.
--   **WhatsApp:** Integrate WhatsApp to send and receive messages from the CRM. [Frappe WhatsApp](https://github.com/shridarpatil/frappe_whatsapp) is used for this integration.
--   **ERPNext:** Integrate with [ERPNext](https://erpnext.com) to extend the CRM capabilities to include invoicing, accounting, and more.
-
-### Under the Hood
-
-- [Frappe Framework](https://github.com/frappe/frappe): A full-stack web application framework.
-- [Frappe UI](https://github.com/frappe/frappe-ui): A Vue-based UI library, to provide a modern user interface.
-
-### Compatibility
-This app is compatible with the following versions of Frappe and ERPNext:
-
-| CRM branch            | Stability | Frappe branch        | ERPNext branch       |
-| :-------------------- | :-------- | :------------------- | :------------------- |
-| main - v1.x           | stable    | v15.x & v16.x        | v15.x & v16.x        |
-| develop - future/v2.x | unstable  | develop - future/v17 | develop - future/v17 |
-
-## Getting Started (Production)
-
-### Managed Hosting
-
-Get started with your personal or business site with a few clicks on Frappe Cloud - our official hosting service.
-<div>
-	<a href="https://frappecloud.com/crm/signup" target="_blank">
-		<picture>
-			<source media="(prefers-color-scheme: dark)" srcset="https://frappe.io/files/try-on-fc-white.png">
-			<img src="https://frappe.io/files/try-on-fc-black.png" alt="Try on Frappe Cloud" height="28" />
-		</picture>
-	</a>
-</div>
-
-### Self Hosting
-
-Follow these steps to set up Frappe CRM in production:
-
-**Step 1**: Download the easy install script
+## Quick Start
 
 ```bash
-wget https://frappe.io/easy-install.py
+git clone https://github.com/your-username/crm-ui.git
+cd crm-ui/frontend
+yarn install
+cp .env.example .env.development
+# Edit .env.development — set VITE_BACKEND_URL to your API
+yarn dev
 ```
 
-**Step 2**: Run the deployment command
+Visit `http://localhost:5173`.
+
+---
+
+## Connecting Your Backend
+
+The frontend communicates with your backend through an **adapter** — a small object that maps CRM operations to your API.
+
+### Step 1 — Write your adapter
+
+Create `frontend/src/api/adapters/my-backend.js`:
+
+```js
+export const MyBackendAdapter = {
+  async request(method, endpoint, data, params) {
+    const url = new URL(`${import.meta.env.VITE_BACKEND_URL}/${endpoint}`)
+    if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
+
+    const res = await fetch(url, {
+      method: method || 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+      body: data ? JSON.stringify(data) : undefined,
+    })
+
+    const json = await res.json()
+    // Wrap your response so frappe-ui can consume it
+    return { message: json }
+  },
+
+  auth: {
+    async login(email, password) {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const { token, user } = await res.json()
+      localStorage.setItem('token', token)
+      localStorage.setItem('user', user)
+    },
+    async logout() {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+    },
+    getUser() {
+      return localStorage.getItem('user')
+    },
+  },
+}
+```
+
+### Step 2 — Register it
+
+In `frontend/src/main.js`:
+
+```js
+import { MyBackendAdapter } from './api/adapters/my-backend'
+setAdapter(MyBackendAdapter)
+```
+
+### Step 3 — Configure your backend URL
+
+In `.env.development`:
+
+```env
+VITE_BACKEND_URL=http://localhost:3000
+```
+
+See [ADAPTERS.md](./ADAPTERS.md) for the full guide including the complete endpoint reference and example adapters for Express, Django, Laravel, ASP.NET Core, and Spring Boot.
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────┐
+│                  Vue 3 Frontend                  │
+│                                                  │
+│   Pages → Components → Stores → API Layer       │
+│                                   │              │
+│                           setAdapter()           │
+│                                   │              │
+│           ┌───────────────────────┴───────────┐  │
+│           │          Your Adapter             │  │
+│           │  request()  auth.login()          │  │
+│           │  auth.logout()  auth.getUser()    │  │
+│           └───────────────────────┬───────────┘  │
+└───────────────────────────────────┼─────────────┘
+                                    │
+               ┌────────────────────┴───────────────┐
+               │            Your Backend             │
+               │  Express · Django · Laravel         │
+               │  ASP.NET Core · Spring Boot · Go   │
+               └─────────────────────────────────────┘
+```
+
+### Key files
+
+| File | Purpose |
+|---|---|
+| `frontend/src/api/index.js` | Adapter registry — `setAdapter()`, `getAdapter()`, `request()` |
+| `frontend/src/api/adapters/frappe.js` | Default Frappe adapter |
+| `frontend/src/api/adapters/rest.js` | Template — copy this to write your own adapter |
+| `frontend/src/api/endpoints.js` | All ~60 API endpoints the CRM uses, named and documented |
+| `frontend/src/config.js` | Central config — backend URL, socket URL, site name |
+| `frontend/src/stores/session.js` | Auth state — reads from `adapter.auth.getUser()` |
+
+---
+
+## Environment Variables
+
+```env
+# Required
+VITE_BACKEND_URL=http://localhost:8000     # Your API base URL
+
+# Optional
+VITE_SOCKET_URL=http://localhost:9000      # WebSocket server for real-time notifications
+VITE_BASE_URL=/                            # Router base path (default: /crm in production)
+
+# Dev only — bypasses login for UI development without a backend
+VITE_DEV_USER=dev@example.com
+```
+
+---
+
+## Development Without a Backend
+
+To explore the full UI without running any backend:
+
+```env
+# frontend/.env.development
+VITE_DEV_USER=dev@example.com
+```
+
+This bypasses the login check so all components render. API calls fail silently — the full UI structure, navigation, and layout are explorable.
+
+---
+
+## Building for Production
 
 ```bash
-python3 ./easy-install.py deploy \
-    --project=crm_prod_setup \
-    --email=email.example.com \
-    --image=ghcr.io/frappe/crm \
-    --version=stable \
-    --app=crm \
-    --sitename subdomain.domain.tld
+cd frontend
+yarn build
 ```
 
-Replace the following parameters with your values:
+Output in `frontend/dist/` — static files you can serve from any CDN, Nginx, or web server.
 
--   `email.example.com`: Your email address
--   `subdomain.domain.tld`: Your domain name where CRM will be hosted
+```nginx
+server {
+  root /var/www/crm-ui/dist;
 
-The script will set up a production-ready instance of Frappe CRM with all the necessary configurations in about 5 minutes.
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
 
-## Getting Started (Development)
+  location /api {
+    proxy_pass http://your-backend:3000;
+  }
+}
+```
 
-### Local Setup
+---
 
-1. [Setup Bench](https://docs.frappe.io/framework/user/en/installation).
-1. In the frappe-bench directory, run `bench start` and keep it running.
-1. Open a new terminal session and cd into `frappe-bench` directory and run following commands:
-    ```sh
-    $ bench get-app crm
-    $ bench new-site sitename.localhost --install-app crm
-    $ bench browse sitename.localhost --user Administrator
-    ```
-1. Access the crm page at `sitename.localhost:8000/crm` in your web browser.
+## Roadmap
 
-**For Frontend Development**
-1. Open a new terminal session and cd into `frappe-bench/apps/crm`, and run the following commands:
-    ```
-    yarn install
-    yarn dev
-    ```
-1. Now, you can access the site on vite dev server at `http://sitename.localhost:8080`
+### v0.1 — Current
+- ✅ Complete CRM UI decoupled from Frappe backend
+- ✅ Pluggable adapter pattern
+- ✅ Default Frappe-compatible adapter
+- ✅ Vue-native login page
+- ✅ Dev mode — full UI without any backend
+- ✅ All ~60 endpoints documented in one file
 
-**Note:** You'll find all the code related to Frappe CRM's frontend inside `frappe-bench/apps/crm/frontend`
+### v0.2 — Planned
+- [ ] Standardized REST spec — no adapter needed, just implement the URL contract
+- [ ] Response normalization layer — adapters handle field mapping automatically
+- [ ] Example adapters — Express, Django, Laravel, ASP.NET Core, Spring Boot
+- [ ] Mock adapter — complete UI with realistic fake data
 
-### Docker
+### v0.3 — Future
+- [ ] Replace frappe-ui data primitives with backend-agnostic composables
+- [ ] Plugin system for custom pages and fields
+- [ ] Theme customization API
 
-You need Docker, docker-compose and git setup on your machine. Refer [Docker documentation](https://docs.docker.com/). After that, follow below steps:
+---
 
-**Step 1**: Setup folder and download the required files
+## Contributing
 
-    mkdir frappe-crm
-    cd frappe-crm
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-    # Download the docker-compose file
-    wget -O docker-compose.yml https://raw.githubusercontent.com/frappe/crm/develop/docker/docker-compose.yml
+---
 
-    # Download the setup script
-    wget -O init.sh https://raw.githubusercontent.com/frappe/crm/develop/docker/init.sh
+## Acknowledgements
 
-**Step 2**: Run the container and daemonize it
+This project is a fork of [Frappe CRM](https://github.com/frappe/crm) by [Frappe Technologies](https://frappe.io). All UI components and design are their work. This project only decouples the backend layer.
 
-    docker compose up -d
+## License
 
-**Step 3**: The site [http://crm.localhost:8000/crm](http://crm.localhost:8000/crm) should now be available. The default credentials are:
+MIT. The original Frappe CRM is also MIT licensed.
 
--   Username: Administrator
--   Password: admin
-
-## Learn and connect
-
--   [Telegram Public Group](https://t.me/frappecrm)
--   [Discuss Forum](https://discuss.frappe.io/c/frappe-crm)
--   [Documentation](https://docs.frappe.io/crm)
--   [YouTube](https://www.youtube.com/@frappetech)
--   [X/Twitter](https://x.com/frappetech)
-
-<br>
-<br>
-<div align="center" style="padding-top: 0.75rem;">
-	<a href="https://frappe.io" target="_blank">
-		<picture>
-			<source media="(prefers-color-scheme: dark)" srcset="https://frappe.io/files/Frappe-white.png">
-			<img src="https://frappe.io/files/Frappe-black.png" alt="Frappe Technologies" height="28"/>
-		</picture>
-	</a>
-</div>
+This project is not affiliated with or endorsed by Frappe Technologies.

@@ -9,6 +9,12 @@ const routes = [
     name: 'Home',
   },
   {
+    path: '/login',
+    name: 'Login',
+    component: () => import('@/pages/Login.vue'),
+    meta: { isPublic: true },
+  },
+  {
     path: '/notifications',
     name: 'Notifications',
     component: () => import('@/pages/MobileNotification.vue'),
@@ -128,7 +134,7 @@ const handleMobileView = (componentName) => {
 }
 
 let router = createRouter({
-  history: createWebHistory('/crm'),
+  history: createWebHistory(import.meta.env.VITE_BASE_URL || '/crm'),
   routes,
 })
 
@@ -136,6 +142,13 @@ router.beforeEach(async (to, from, next) => {
   router.previousRoute = from
 
   const { isLoggedIn } = sessionStore()
+
+  // Redirect logged-in users away from the login page
+  if (to.meta?.isPublic) {
+    if (isLoggedIn) next({ name: 'Home' })
+    else next()
+    return
+  }
   const { users, isCrmUser } = usersStore()
 
   if (isLoggedIn && !users.fetched) {
@@ -150,7 +163,7 @@ router.beforeEach(async (to, from, next) => {
     next({ name: 'Not Permitted' })
   } else if (to.name === 'Home' && isLoggedIn) {
     const { views, getDefaultView } = viewsStore()
-    await views.promise
+    try { await views.promise } catch { /* no backend */ }
 
     let defaultView = getDefaultView()
     if (!defaultView) {
@@ -171,7 +184,7 @@ router.beforeEach(async (to, from, next) => {
       next({ name: route_name, params: { viewType: type } })
     }
   } else if (!isLoggedIn) {
-    window.location.href = '/login?redirect-to=/crm'
+    next({ name: 'Login' })
   } else if (to.matched.length === 0) {
     next({ name: 'Invalid Page' })
   } else if (['Deal', 'Lead'].includes(to.name) && !to.hash) {
@@ -192,7 +205,7 @@ router.beforeEach(async (to, from, next) => {
     !to.query?.view
   ) {
     const { views, standardViews, getDefaultView } = viewsStore()
-    await views.promise
+    try { await views.promise } catch { /* no backend */ }
 
     const viewType = to.params?.viewType ?? ''
     const standardViewTypes = ['list', 'kanban', 'group_by']

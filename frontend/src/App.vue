@@ -4,6 +4,7 @@
     <Layout v-else-if="session.isLoggedIn" class="isolate">
       <router-view :key="$route.fullPath" />
     </Layout>
+    <router-view v-else :key="$route.fullPath" />
     <Dialogs />
     <DoctypeModals />
     <EventNotificationPopup />
@@ -23,9 +24,7 @@ const session = sessionStore()
 provide('session', session)
 
 const { setTheme } = useTheme()
-if (!localStorage.getItem('theme')) {
-  setTheme('light')
-}
+setTheme('light')
 
 const MobileLayout = defineAsyncComponent(
   () => import('./components/Layouts/MobileLayout.vue'),

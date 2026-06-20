@@ -1,27 +1,46 @@
 import { io } from 'socket.io-client'
-import { socketio_port } from '../../../../sites/common_site_config.json'
 import { getCachedListResource, getCachedResource } from 'frappe-ui'
+import { config } from './config'
+
+/**
+ * Resolve the socket server URL.
+ *
+ * Priority:
+ *  1. VITE_SOCKET_URL / config.socketUrl  — explicit override (any backend)
+ *  2. Frappe convention                   — reconstructed from window.* globals
+ *  3. null                                — no socket, real-time features disabled
+ */
+function resolveSocketUrl() {
+  if (config.socketUrl) return config.socketUrl
+
+  // Frappe fallback: build URL from injected window globals
+  if (window.site_name && window.socketio_port) {
+    const host = window.location.hostname
+    const port = window.location.port ? `:${window.socketio_port}` : ''
+    const protocol = port ? 'http' : 'https'
+    return `${protocol}://${host}${port}/${window.site_name}`
+  }
+
+  return null
+}
 
 export function initSocket() {
-  let host = window.location.hostname
-  let siteName = window.site_name
-  let port = window.location.port ? `:${socketio_port}` : ''
-  let protocol = port ? 'http' : 'https'
-  let url = `${protocol}://${host}${port}/${siteName}`
+  const url = resolveSocketUrl()
+  if (!url) return null   // socket is optional — app works without it
 
-  let socket = io(url, {
+  const socket = io(url, {
     withCredentials: true,
     reconnectionAttempts: 5,
   })
+
   socket.on('refetch_resource', (data) => {
     if (data.cache_key) {
-      let resource =
+      const resource =
         getCachedResource(data.cache_key) ||
         getCachedListResource(data.cache_key)
-      if (resource) {
-        resource.reload()
-      }
+      if (resource) resource.reload()
     }
   })
+
   return socket
 }
