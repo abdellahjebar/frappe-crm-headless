@@ -16,18 +16,14 @@
     />
   </div>
 </template>
-
 <script setup>
 import LeadSyncSources from './LeadSyncSources.vue'
 import LeadSyncSourceForm from './LeadSyncSourceForm.vue'
-
-import { createListResource } from 'frappe-ui'
 import { provide, ref } from 'vue'
-
+import { useList } from '@/composables/useList'
 const step = ref('source-list')
 const source = ref(null)
-
-const sources = createListResource({
+const sources = useList({
   type: 'list',
   doctype: 'Lead Sync Source',
   cache: 'lead_sync_sources',
@@ -36,9 +32,7 @@ const sources = createListResource({
   orderBy: 'modified desc',
   pageLength: 20,
 })
-
 provide('sources', sources)
-
 function updateStep(newStep, data) {
   step.value = newStep
   source.value = data

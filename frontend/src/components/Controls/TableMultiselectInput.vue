@@ -85,7 +85,7 @@ const parsedValues = computed(() => {
 const getLinkField = () => {
   error.value = ''
   if (!linkField.value) {
-    let fields = getFields()
+    let fields = getFields().filter((f) => !f.hidden)
     linkField.value = fields?.find((df) =>
       ['Link', 'User'].includes(df.fieldtype),
     )

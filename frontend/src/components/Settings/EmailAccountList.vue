@@ -24,7 +24,6 @@
         />
       </div>
     </div>
-
     <!-- list accounts -->
     <div
       v-if="!emailAccounts.loading && Boolean(emailAccounts.data?.length)"
@@ -53,16 +52,13 @@
     />
   </div>
 </template>
-
 <script setup>
 import Email2Icon from '@/components/Icons/Email2Icon.vue'
 import EmptyState from '../ListViews/EmptyState.vue'
 import EmailAccountCard from './EmailAccountCard.vue'
-import { createListResource } from 'frappe-ui'
-
+import { useList } from '@/composables/useList'
 const emit = defineEmits(['update:step'])
-
-const emailAccounts = createListResource({
+const emailAccounts = useList({
   doctype: 'Email Account',
   cache: true,
   fields: ['*'],

@@ -1,4 +1,4 @@
-<!-- eslint-disable vue/no-v-html -->
+﻿<!-- eslint-disable vue/no-v-html -->
 <template>
   <div class="flex h-full flex-col gap-6 px-6 py-8 text-ink-gray-8">
     <!-- Header -->
@@ -141,7 +141,7 @@
         <Button
           class="w-fit"
           :label="__('Add Notification')"
-          iconLeft="plus"
+          iconLeft="lucide-plus"
           @click="
             notifications.push({
               type: 'Notification',
@@ -241,7 +241,7 @@
         <Button
           class="w-fit"
           :label="__('Add Notification')"
-          iconLeft="plus"
+          iconLeft="lucide-plus"
           @click="
             allDayNotifications.push({
               type: 'Notification',

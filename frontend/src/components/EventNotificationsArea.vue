@@ -78,6 +78,7 @@
 
   <EmptyState
     v-else
+    name="Event"
     title="No Upcoming Events"
     description="You have no events scheduled"
     :icon="EventIcon"

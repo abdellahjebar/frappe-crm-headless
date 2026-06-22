@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <TextEditor
     ref="textEditor"
     :editor-class="[
@@ -107,13 +107,12 @@
         </div>
       </div>
     </template>
-    <template #editor="{ editor: _editor }">
+    <template #editor>
       <EditorContent
         :class="[
           editable &&
             'sm:mx-10 mx-4 max-h-[35vh] overflow-y-auto border-t py-3',
         ]"
-        :editor="_editor"
       />
     </template>
     <template #bottom>
@@ -137,7 +136,7 @@
           class="flex justify-between gap-2 overflow-hidden border-t sm:px-10 px-4 py-2.5"
         >
           <div class="flex gap-1 items-center overflow-x-auto">
-            <TextEditorBubbleMenu :buttons="textEditorMenuButtons" />
+            <EditorFixedMenu :items="articleToolbar" />
             <IconPicker
               v-slot="{ togglePopover }"
               v-model="emoji"
@@ -201,18 +200,14 @@ import AttachmentIcon from '@/components/Icons/AttachmentIcon.vue'
 import AttachmentItem from '@/components/AttachmentItem.vue'
 import EmailMultiSelect from '@/components/Controls/EmailMultiSelect.vue'
 import EmailTemplateSelectorModal from '@/components/Modals/EmailTemplateSelectorModal.vue'
-import {
-  TextEditorBubbleMenu,
-  TextEditor,
-  FileUploader,
-  call,
-  FormControl,
-} from 'frappe-ui'
-import { useTelemetry } from 'frappe-ui/frappe'
+import { FileUploader, FormControl } from 'frappe-ui'
+import { call } from '@/api/call'
+import { EditorContent, EditorFixedMenu, articleToolbar } from 'frappe-ui/editor'
+import TextEditor from '@/components/TextEditor.vue'
+import { useTelemetry } from '@/composables/useTelemetry'
 import { useDocument } from '@/data/document'
 import { validateEmail } from '@/utils'
 import Paragraph from '@tiptap/extension-paragraph'
-import { EditorContent } from '@tiptap/vue-3'
 import { ref, computed, nextTick, inject, watch } from 'vue'
 
 const props = defineProps({
@@ -350,41 +345,4 @@ defineExpose({
   bccEmails,
 })
 
-const textEditorMenuButtons = [
-  'Paragraph',
-  ['Heading 2', 'Heading 3', 'Heading 4', 'Heading 5', 'Heading 6'],
-  'Separator',
-  'Bold',
-  'Italic',
-  'Separator',
-  'Bullet List',
-  'Numbered List',
-  'Separator',
-  'Align Left',
-  'Align Center',
-  'Align Right',
-  'FontColor',
-  'Separator',
-  'Image',
-  'Video',
-  'Link',
-  'Blockquote',
-  'Code',
-  'Horizontal Rule',
-  [
-    'InsertTable',
-    'AddColumnBefore',
-    'AddColumnAfter',
-    'DeleteColumn',
-    'AddRowBefore',
-    'AddRowAfter',
-    'DeleteRow',
-    'MergeCells',
-    'SplitCell',
-    'ToggleHeaderColumn',
-    'ToggleHeaderRow',
-    'ToggleHeaderCell',
-    'DeleteTable',
-  ],
-]
 </script>

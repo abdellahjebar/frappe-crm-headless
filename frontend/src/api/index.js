@@ -65,10 +65,26 @@ function validateAdapter(adapter) {
   if (typeof adapter?.auth?.login   !== 'function') missing.push('auth.login(email, password)')
   if (typeof adapter?.auth?.logout  !== 'function') missing.push('auth.logout()')
   if (typeof adapter?.auth?.getUser !== 'function') missing.push('auth.getUser()')
+  if (typeof adapter?.upload !== 'function') missing.push('upload(file, options)')
   if (missing.length) {
     throw new Error(
       `[crm-ui] Adapter is missing required methods:\n  - ${missing.join('\n  - ')}\n` +
-      'See src/api/adapters/rest.js for the full interface.',
+      'See ADAPTERS.md for the full interface.',
     )
+  }
+
+  // Soft-check optional capabilities: if namespace is present, the method must be a function.
+  const optionalCaps = [
+    ['realtime',   'handleEvent'],
+    ['telemetry',  'capture'],
+    ['onboarding', 'complete'],
+  ]
+  for (const [ns, method] of optionalCaps) {
+    if (adapter[ns] !== undefined && typeof adapter[ns]?.[method] !== 'function') {
+      console.warn(
+        `[crm-ui] adapter.${ns} is set but .${method} is not a function — ` +
+        'this optional capability will be silently ignored.',
+      )
+    }
   }
 }

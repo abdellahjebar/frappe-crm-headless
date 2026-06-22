@@ -43,7 +43,6 @@
     </template>
   </Dialog>
 </template>
-
 <script setup>
 import EditIcon from '@/components/Icons/EditIcon.vue'
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
@@ -52,33 +51,27 @@ import { statusesStore } from '@/stores/statuses'
 import { sessionStore } from '@/stores/session'
 import { isMobileView } from '@/composables/settings'
 import { showQuickEntryModal, quickEntryProps } from '@/composables/modals'
-import { useOnboarding, useTelemetry } from 'frappe-ui/frappe'
-import { createResource } from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
+import { useOnboarding } from '@/composables/useOnboarding'
 import { useDocument } from '@/data/document'
 import { computed, onMounted, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   defaults: { type: Object, default: () => ({}) },
 })
-
 const { user } = sessionStore()
 const { getUser, isManager } = usersStore()
 const { getLeadStatus, statusOptions } = statusesStore()
 const { updateOnboardingStep } = useOnboarding('frappecrm')
-
 const show = defineModel({ type: Boolean })
 const router = useRouter()
 const error = ref(null)
 const isLeadCreating = ref(false)
-
 const { document: lead, triggerOnBeforeCreate } = useDocument('CRM Lead')
-
 const { capture } = useTelemetry()
-
 const leadStatuses = computed(() => statusOptions('lead'))
-
-const tabs = createResource({
+const tabs = useQuery({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_fields_layout',
   cache: ['QuickEntry', 'CRM Lead'],
   params: { doctype: 'CRM Lead', type: 'Quick Entry' },
@@ -93,7 +86,6 @@ const tabs = createResource({
               field.options = leadStatuses.value
               field.prefix = getLeadStatus(lead.doc.status).color
             }
-
             if (field.fieldtype === 'Table') {
               lead.doc[field.fieldname] = []
             }
@@ -103,18 +95,14 @@ const tabs = createResource({
     })
   },
 })
-
-const createLead = createResource({
+const createLead = useQuery({
   url: 'frappe.client.insert',
 })
-
 async function createNewLead() {
   if (lead.doc.website && !lead.doc.website.startsWith('http')) {
     lead.doc.website = 'https://' + lead.doc.website
   }
-
   await triggerOnBeforeCreate?.()
-
   createLead.submit(
     {
       doc: {
@@ -175,17 +163,14 @@ async function createNewLead() {
     },
   )
 }
-
 function openQuickEntryModal() {
   showQuickEntryModal.value = true
   quickEntryProps.value = { doctype: 'CRM Lead' }
   nextTick(() => (show.value = false))
 }
-
 onMounted(() => {
   lead.doc.no_of_employees = '1-10'
   Object.assign(lead.doc, props.defaults)
-
   if (!lead.doc?.lead_owner) {
     lead.doc.lead_owner = getUser().name
   }

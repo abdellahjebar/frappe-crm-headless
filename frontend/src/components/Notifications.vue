@@ -1,4 +1,4 @@
-<!-- eslint-disable vue/no-v-html -->
+﻿<!-- eslint-disable vue/no-v-html -->
 <template>
   <div
     v-if="visible"
@@ -75,6 +75,7 @@
         </div>
         <EmptyState
           v-else
+          name="Notification"
           title="No New Notifications"
           description="You have no new notifications"
           :icon="NotificationsIcon"
@@ -104,7 +105,7 @@ import { useEventNotificationAlert } from '@/data/notifications'
 import { globalStore } from '@/stores/global'
 import { timeAgo, sanitizeHTML } from '@/utils'
 import { onClickOutside } from '@vueuse/core'
-import { useTelemetry } from 'frappe-ui/frappe'
+import { useTelemetry } from '@/composables/useTelemetry'
 import { TabButtons } from 'frappe-ui'
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 
@@ -115,9 +116,9 @@ const { capture } = useTelemetry()
 
 const activeTab = ref('all')
 const tabs = [
-  { label: __('All'), value: 'all' },
-  { label: __('Events'), value: 'events' },
-  // { label: __('Mentions'), value: 'mentions' },
+  { label: __('All'), name: 'all' },
+  { label: __('Events'), name: 'events' },
+  // { label: __('Mentions'), name: 'mentions' },
 ]
 
 const target = ref(null)

@@ -1,20 +1,17 @@
-import { createResource } from 'frappe-ui'
+
 import { ref } from 'vue'
 import { globalStore } from '@/stores/global'
-
+import { useQuery } from '@/composables/useQuery'
 const isDemoDataCreated = ref(window.demo_data_created || false)
-
-const _clearDemoData = createResource({
+const _clearDemoData = useQuery({
   url: 'crm.demo.api.clear_demo_data',
   onSuccess() {
     isDemoDataCreated.value = false
     window.location.reload()
   },
 })
-
 export function useDemoData() {
   const { $dialog } = globalStore()
-
   const clearDemoData = () => {
     $dialog({
       title: __('Clear Demo Data'),
@@ -34,7 +31,6 @@ export function useDemoData() {
       ],
     })
   }
-
   return {
     isDemoDataCreated,
     clearDemoData,

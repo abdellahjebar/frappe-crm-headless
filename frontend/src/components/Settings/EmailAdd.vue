@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex flex-col h-full gap-4">
     <!-- title and desc -->
     <div role="heading" aria-level="1" class="flex flex-col gap-1">
@@ -91,11 +91,10 @@
     </div>
   </div>
 </template>
-
 <script setup>
 import { computed, reactive, ref } from 'vue'
-import { createResource, toast } from 'frappe-ui'
-import { useTelemetry } from 'frappe-ui/frappe'
+import { toast } from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
 import CircleAlert from '~icons/lucide/circle-alert'
 import {
   customProviderFields,
@@ -105,9 +104,8 @@ import {
   incomingOutgoingFields,
 } from './emailConfig'
 import EmailProviderIcon from './EmailProviderIcon.vue'
-
+import { useQuery } from '@/composables/useQuery'
 const emit = defineEmits(['update:step'])
-
 const state = reactive({
   service: '',
   email_account_name: '',
@@ -123,18 +121,15 @@ const state = reactive({
   create_lead_from_incoming_email: false,
 })
 const { capture } = useTelemetry()
-
 const selectedService = ref(null)
 const fields = computed(() =>
   selectedService.value.custom ? customProviderFields : popularProviderFields,
 )
-
 function handleSelect(service) {
   selectedService.value = service
   state.service = service.name
 }
-
-const addEmailRes = createResource({
+const addEmailRes = useQuery({
   url: 'crm.api.settings.create_email_account',
   makeParams: (val) => {
     return {
@@ -149,15 +144,12 @@ const addEmailRes = createResource({
     error.value = __('Failed to create Email Account, Invalid credentials')
   },
 })
-
 const error = ref()
 function createEmailAccount() {
   error.value = validateInputs(state, selectedService.value.custom)
   if (error.value) return
-
   addEmailRes.submit({ data: state })
   capture('email_account_created')
 }
 </script>
-
 <style scoped></style>

@@ -169,34 +169,24 @@
   </div>
   <WorkDayModal v-model="dialog" :workDaysList="slaData.working_hours" />
 </template>
-
 <script setup>
-import {
-  Button,
-  createListResource,
-  Dropdown,
-  ErrorMessage,
-  NestedPopover,
-} from 'frappe-ui'
+import { Button, Dropdown, ErrorMessage, NestedPopover } from 'frappe-ui'
 import { ConfirmDelete, getGridTemplateColumnsForTable } from '../../../utils'
 import { slaData, slaDataErrors } from './utils'
 import { ref } from 'vue'
 import WorkDayModal from './WorkDayModal.vue'
-
+import { useList } from '@/composables/useList'
 const dialog = ref({
   show: false,
   isEditing: false,
   data: {},
 })
-
 const isConfirmingDelete = ref(false)
-
-const holidayListData = createListResource({
+const holidayListData = useList({
   doctype: 'CRM Holiday List',
   fields: ['name'],
   auto: true,
 })
-
 const dropdownOptions = (workDay) => [
   {
     label: __('Edit'),
@@ -208,7 +198,6 @@ const dropdownOptions = (workDay) => [
     isConfirmingDelete,
   }),
 ]
-
 const columns = [
   {
     label: __('Day'),
@@ -226,7 +215,6 @@ const columns = [
     isRequired: true,
   },
 ]
-
 const workDayOptions = [
   { label: 'Monday', value: 'Monday' },
   { label: 'Tuesday', value: 'Tuesday' },
@@ -236,23 +224,19 @@ const workDayOptions = [
   { label: 'Saturday', value: 'Saturday' },
   { label: 'Sunday', value: 'Sunday' },
 ]
-
 const createNewHolidayList = () => {
   window.open(`${window.location.origin}/app/crm-holiday-list`)
 }
-
 const deleteWorkDay = (workDay) => {
   if (!isConfirmingDelete.value) {
     isConfirmingDelete.value = true
     return
   }
-
   const item = slaData.value.working_hours.indexOf(workDay)
   if (item !== -1) {
     slaData.value.working_hours.splice(item, 1)
   }
 }
-
 const editWorkDay = (workDay) => {
   dialog.value.show = true
   dialog.value.isEditing = true
@@ -262,7 +246,6 @@ const editWorkDay = (workDay) => {
     end_time: workDay.end_time,
   }
 }
-
 const addWorkDay = () => {
   const usedDays = new Set(
     slaData.value.working_hours.map((day) => day.workday),
@@ -270,7 +253,6 @@ const addWorkDay = () => {
   const nextDay =
     workDayOptions.find((day) => !usedDays.has(day.label))?.label ||
     workDayOptions[0].label
-
   slaData.value.working_hours.push({
     workday: nextDay,
     start_time: '09:00:00',
@@ -278,19 +260,16 @@ const addWorkDay = () => {
     id: Math.random().toString(36).substring(2, 9),
   })
 }
-
 const editHolidayList = (holidayList) => {
   window.open(
     `${window.location.origin}/app/crm-holiday-list/${holidayList.name}`,
   )
 }
-
 const formatTime = (time) => {
   if (!time) return '00:00'
   const [hours, minutes] = time.split(':')
   const date = new Date()
   date.setHours(parseInt(hours) || 0, parseInt(minutes) || 0, 0)
-
   return date.toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
@@ -298,7 +277,6 @@ const formatTime = (time) => {
   })
 }
 </script>
-
 <style scoped>
 input[type='radio'] {
   display: flex;
@@ -311,32 +289,26 @@ input[type='radio'] {
   transition: all 0.2s ease;
   background-color: white;
 }
-
 input[type='radio']:checked {
   background-color: black;
   border: 2px solid #000;
 }
-
 input[type='radio']:checked::after {
   content: '';
   background-color: #fff;
 }
-
 input[type='radio']:focus {
   outline: none !important;
   box-shadow: none !important;
 }
-
 [data-theme='dark'] input[type='radio'] {
   border: 2px solid #525252;
   background-color: transparent;
 }
-
 [data-theme='dark'] input[type='radio']:checked {
   background-color: #171717;
   border: 2px solid #fff;
 }
-
 [data-theme='dark'] input[type='radio']:checked::after {
   background-color: #171717;
 }

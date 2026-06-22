@@ -1,4 +1,4 @@
-import { call } from 'frappe-ui'
+import { call } from '@/api/call'
 import { ref, reactive, readonly, Ref } from 'vue'
 
 export interface UserSettings {

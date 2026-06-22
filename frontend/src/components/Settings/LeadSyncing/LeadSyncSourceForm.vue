@@ -220,12 +220,12 @@ const sourceDoc = computed(() => {
 })
 
 const { meta, getFields } = getMeta('Lead Sync Source')
-const fields = ref(getFields())
+const fields = ref(getFields().filter((f) => !f.hidden))
 
 watch(
   () => meta.data,
   () => {
-    fields.value = getFields()
+    fields.value = getFields().filter((f) => !f.hidden)
   },
 )
 

@@ -90,7 +90,7 @@
 </template>
 
 <script setup>
-import { call } from 'frappe-ui'
+import { call } from '@/api/call'
 import { ref } from 'vue'
 
 const show = defineModel({ type: Boolean })

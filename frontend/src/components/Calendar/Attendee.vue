@@ -67,7 +67,6 @@
         </ComboboxPortal>
       </ComboboxRoot>
     </div>
-
     <!-- Selected Attendees -->
     <div
       v-if="values.length"
@@ -98,10 +97,8 @@
     </div>
   </div>
 </template>
-
 <script setup>
 import UserAvatar from '@/components/UserAvatar.vue'
-import { createResource } from 'frappe-ui'
 import {
   ComboboxRoot,
   ComboboxAnchor,
@@ -114,7 +111,7 @@ import {
 } from 'reka-ui'
 import { ref, computed, nextTick } from 'vue'
 import { watchDebounced } from '@vueuse/core'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   validate: { type: Function, default: null },
   variant: { type: String, default: 'subtle' },
@@ -128,9 +125,7 @@ const props = defineProps({
   fetchContacts: { type: Boolean, default: true },
   existingEmails: { type: Array, default: () => [] },
 })
-
 const values = defineModel({ type: Array, default: () => [] })
-
 const emails = ref([])
 const search = ref(null)
 const error = ref(null)
@@ -140,7 +135,6 @@ const text = ref('')
 const showOptions = ref(false)
 const optionsRef = ref(null)
 const tempSelection = ref(null)
-
 const metaByEmail = computed(() => {
   const out = {}
   const source = values.value || []
@@ -149,7 +143,6 @@ const metaByEmail = computed(() => {
   }
   return out
 })
-
 function getTooltip(email) {
   const m = metaByEmail.value[email]
   if (!m) return email
@@ -158,7 +151,6 @@ function getTooltip(email) {
   if (m.reference_docname) parts.push(m.reference_docname)
   return parts.length ? parts.join(': ') : email
 }
-
 watchDebounced(
   query,
   (val) => {
@@ -169,8 +161,7 @@ watchDebounced(
   },
   { debounce: 300, immediate: true },
 )
-
-const filterOptions = createResource({
+const filterOptions = useQuery({
   url: 'crm.api.contact.search_emails',
   method: 'POST',
   cache: [text.value, 'Contact'],
@@ -186,18 +177,15 @@ const filterOptions = createResource({
         value: email,
       }
     })
-
     // Filter out existing emails
     if (props.existingEmails?.length) {
       allData = allData.filter((option) => {
         return !props.existingEmails.includes(option.value)
       })
     }
-
     return allData
   },
 })
-
 const options = computed(() => {
   let searchedContacts = props.fetchContacts ? filterOptions.data : []
   if (!searchedContacts?.length && query.value) {
@@ -209,22 +197,18 @@ const options = computed(() => {
   }
   return searchedContacts || []
 })
-
 const emptyStateText = computed(() =>
   props.fetchContacts
     ? __('No results found')
     : __('Type an email address to add attendee'),
 )
-
 function reload(val) {
   if (!props.fetchContacts) return
-
   filterOptions.update({
     params: { txt: val },
   })
   filterOptions.reload()
 }
-
 function onSelect(val, fullOption = null) {
   if (!val) return
   const optionObj = fullOption ||
@@ -241,7 +225,6 @@ function onSelect(val, fullOption = null) {
     nextTick(() => setFocus())
   }
 }
-
 function handleEnter() {
   if (query.value) {
     onSelect(query.value, {
@@ -251,26 +234,20 @@ function handleEnter() {
     })
   }
 }
-
 function onInput(e) {
   query.value = e.target.value
   showOptions.value = true
 }
-
 const addValue = (option) => {
   // Safeguard for falsy option
   if (!option || !option.value) return
-
   error.value = null
   info.value = null
-
   const current = Array.isArray(values.value) ? values.value.slice() : []
   const existing = new Set(current.map((a) => a.email))
-
   const raw = option.value || ''
   const parts = raw.split(',')
   const hasMultiple = parts.length > 1
-
   for (let p of parts) {
     p = p.trim()
     if (!p) continue
@@ -285,13 +262,11 @@ const addValue = (option) => {
     }
     existing.add(p)
     const entry = { email: p }
-
     if (option.name && !hasMultiple) {
       entry.reference_docname = option.name
     }
     current.push(entry)
   }
-
   values.value = current
   // Scroll to the bottom so the last added value is visible
   nextTick(() => {
@@ -304,14 +279,11 @@ const addValue = (option) => {
     })
   })
 }
-
 const removeValue = (email) => {
   values.value = (values.value || []).filter((a) => a.email !== email)
 }
-
 function setFocus() {
   search.value?.focus?.()
 }
-
 defineExpose({ setFocus })
 </script>

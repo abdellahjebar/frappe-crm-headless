@@ -11,8 +11,9 @@
 import EventModal from '@/components/Modals/EventModal.vue'
 import { showEventModal, activeEvent } from '@/composables/event'
 import { useDoctypeModal } from '@/composables/doctypeModal'
-import { useOnboarding, useTelemetry } from 'frappe-ui/frappe'
-import { call } from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
+import { useOnboarding } from '@/composables/useOnboarding'
+import { call } from '@/api/call'
 import { useRoute, useRouter } from 'vue-router'
 
 const props = defineProps({

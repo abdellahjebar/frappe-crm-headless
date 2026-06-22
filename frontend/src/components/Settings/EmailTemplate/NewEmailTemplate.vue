@@ -124,7 +124,8 @@
 </template>
 <script setup>
 import { useBroadcast } from '@/composables/useBroadcast'
-import { TextEditor, FormControl, Switch, toast } from 'frappe-ui'
+import { FormControl, Switch, toast } from 'frappe-ui'
+import TextEditor from '@/components/TextEditor.vue'
 import { inject, onMounted, ref } from 'vue'
 
 const props = defineProps({

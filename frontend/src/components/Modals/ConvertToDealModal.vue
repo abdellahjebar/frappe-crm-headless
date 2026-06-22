@@ -45,7 +45,6 @@
           }}
         </div>
       </div>
-
       <div class="mb-4 mt-6 flex items-center gap-2 text-ink-gray-5">
         <ContactsIcon class="h-4 w-4" />
         <label class="block text-base">{{ __('Contact') }}</label>
@@ -67,9 +66,7 @@
           {{ __("New contact will be created based on the person's details") }}
         </div>
       </div>
-
       <div v-if="dealTabs.data?.length" class="h-px w-full border-t my-6" />
-
       <FieldLayout
         v-if="dealTabs.data?.length"
         :tabs="dealTabs.data"
@@ -97,58 +94,47 @@ import { sessionStore } from '@/stores/session'
 import { statusesStore } from '@/stores/statuses'
 import { showQuickEntryModal, quickEntryProps } from '@/composables/modals'
 import { isMobileView } from '@/composables/settings'
-import { useOnboarding, useTelemetry } from 'frappe-ui/frappe'
-import { Switch, Dialog, createResource, call } from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
+import { useOnboarding } from '@/composables/useOnboarding'
+import { Switch, Dialog } from 'frappe-ui'
+import { call } from '@/api/call'
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   lead: { type: Object, required: true },
 })
-
 const show = defineModel({ type: Boolean })
-
 const router = useRouter()
-
 const { statusOptions, getDealStatus } = statusesStore()
 const { isManager } = usersStore()
 const { user } = sessionStore()
 const { updateOnboardingStep } = useOnboarding('frappecrm')
-
 const existingContactChecked = ref(false)
 const existingOrganizationChecked = ref(false)
-
 const existingContact = ref('')
 const existingOrganization = ref('')
 const error = ref('')
 const { capture } = useTelemetry()
-
 const { triggerConvertToDeal } = useDocument('CRM Lead', props.lead.name)
 const { document: deal } = useDocument('CRM Deal')
-
 async function convertToDeal() {
   error.value = ''
-
   if (existingContactChecked.value && !existingContact.value) {
     error.value = __('Please select an existing contact')
     return
   }
-
   if (existingOrganizationChecked.value && !existingOrganization.value) {
     error.value = __('Please select an existing organization')
     return
   }
-
   if (!existingContactChecked.value && existingContact.value) {
     existingContact.value = ''
   }
-
   if (!existingOrganizationChecked.value && existingOrganization.value) {
     existingOrganization.value = ''
   }
-
   await triggerConvertToDeal?.(props.lead, deal.doc, () => (show.value = false))
-
   let _deal = await call('crm.fcrm.doctype.crm_lead.crm_lead.convert_to_deal', {
     lead: props.lead.name,
     deal: deal.doc,
@@ -162,7 +148,6 @@ async function convertToDeal() {
           return arr[arr.length - 1].trim()
         })
         .join(', ')
-
       if (errorMessage.toLowerCase().includes('required')) {
         error.value = __(errorMessage)
       } else {
@@ -186,10 +171,8 @@ async function convertToDeal() {
     router.push({ name: 'Deal', params: { dealId: _deal } })
   }
 }
-
 const dealStatuses = computed(() => statusOptions('deal'))
-
-const dealTabs = createResource({
+const dealTabs = useQuery({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_fields_layout',
   cache: ['RequiredFields', 'CRM Deal'],
   params: { doctype: 'CRM Deal', type: 'Required Fields' },
@@ -206,7 +189,6 @@ const dealTabs = createResource({
               field.options = dealStatuses.value
               field.prefix = getDealStatus(deal.doc.status).color
             }
-
             if (field.fieldtype === 'Table') {
               deal.doc[field.fieldname] = []
             }
@@ -217,7 +199,6 @@ const dealTabs = createResource({
     return hasFields ? parsedTabs : []
   },
 })
-
 function openQuickEntryModal() {
   showQuickEntryModal.value = true
   quickEntryProps.value = {

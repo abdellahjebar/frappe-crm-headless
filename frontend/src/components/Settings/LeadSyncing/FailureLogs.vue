@@ -16,7 +16,6 @@
         {{ __('Retry Sync') }}
       </Button>
     </div>
-
     <div class="grid grid-cols-2 gap-2 mt-4">
       <FormControl
         type="text"
@@ -24,7 +23,6 @@
         :value="selectedLog.name"
         disabled
       />
-
       <FormControl
         type="text"
         :label="__('Reason')"
@@ -32,7 +30,6 @@
         disabled
       />
     </div>
-
     <div class="mt-4 flex flex-col gap-8">
       <div>
         <Textarea
@@ -42,7 +39,6 @@
           disabled
         />
       </div>
-
       <div>
         <Textarea
           v-if="selectedLog.traceback"
@@ -54,7 +50,6 @@
       </div>
     </div>
   </div>
-
   <ListView
     v-if="!selectedLog && failedLeadSyncLogList?.data"
     class="h-full"
@@ -79,26 +74,16 @@
     </template>
   </ListView>
 </template>
-
 <script setup>
 import { ref, watch } from 'vue'
 import { useDocument } from '@/data/document'
-import {
-  Badge,
-  createListResource,
-  Textarea,
-  ListView,
-  FormControl,
-  toast,
-} from 'frappe-ui'
-
+import { Badge, Textarea, ListView, FormControl, toast } from 'frappe-ui'
+import { useList } from '@/composables/useList'
 const props = defineProps({
   source: { type: String, required: true },
 })
-
 const selectedLog = ref(null)
-
-const failedLeadSyncLogList = createListResource({
+const failedLeadSyncLogList = useList({
   doctype: 'Failed Lead Sync Log',
   fields: ['name', 'type', 'lead_data', 'traceback'],
   filters: {
@@ -106,7 +91,6 @@ const failedLeadSyncLogList = createListResource({
   },
   auto: true,
 })
-
 const columns = [
   {
     label: __('ID'),
@@ -117,13 +101,11 @@ const columns = [
     key: 'type',
   },
 ]
-
 const logDoc = ref(null)
 watch(selectedLog, () => {
   if (!selectedLog.value?.name) {
     return
   }
-
   logDoc.value = useDocument('Failed Lead Sync Log', selectedLog.value.name, {
     whitelistedMethods: {
       retrySync: {

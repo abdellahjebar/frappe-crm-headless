@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div
     v-if="isMobileView"
     class="flex flex-col justify-between gap-2 sm:px-5 px-3 py-4"
@@ -20,7 +20,6 @@
             @update="updateGroupBy"
           />
         </div>
-
         <div class="flex gap-2">
           <Button
             :tooltip="__('Refresh')"
@@ -105,7 +104,7 @@
               class="whitespace-nowrap mr-2"
               variant="ghost"
               :label="__('Add Filter')"
-              iconLeft="plus"
+              iconLeft="lucide-plus"
               @click="togglePopover()"
             />
           </template>
@@ -126,7 +125,7 @@
         :loading="updateQuickFilters.loading"
         @click="saveQuickFilters"
       />
-      <Button icon="lucide-x" @click="customizeQuickFilter = false" />
+      <Button icon="lucide-x" :aria-label="__('Close')" @click="customizeQuickFilter = false" />
     </div>
   </div>
   <div v-else class="flex items-center justify-between gap-2 px-5 py-4">
@@ -320,21 +319,15 @@ import GroupBy from '@/components/GroupBy.vue'
 import FadedScrollableDiv from '@/components/FadedScrollableDiv.vue'
 import ColumnSettings from '@/components/ColumnSettings.vue'
 import KanbanSettings from '@/components/Kanban/KanbanSettings.vue'
+import { getAdapter } from '@/api'
 import { getSettings } from '@/stores/settings'
 import { globalStore } from '@/stores/global'
 import { viewsStore } from '@/stores/views'
 import { usersStore } from '@/stores/users'
 import { getMeta } from '@/stores/meta'
 import { isEmoji } from '@/utils'
-import {
-  Tooltip,
-  createResource,
-  Dropdown,
-  toast,
-  call,
-  FeatherIcon,
-  usePageMeta,
-} from 'frappe-ui'
+import { Tooltip, Dropdown, toast, FeatherIcon, usePageMeta } from 'frappe-ui'
+import { call } from '@/api/call'
 import { computed, ref, onMounted, watch, h, markRaw } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useDebounceFn } from '@vueuse/core'
@@ -342,7 +335,7 @@ import { isMobileView } from '@/composables/settings'
 import Draggable from 'vuedraggable'
 import _ from 'lodash'
 import ImportIcon from '~icons/lucide/import'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   doctype: { type: String, required: true },
   filters: { type: Object, default: () => ({}) },
@@ -355,25 +348,19 @@ const props = defineProps({
     }),
   },
 })
-
 const { brand } = getSettings()
 const { $dialog } = globalStore()
 const { reload: reloadView, getDefaultView, getView } = viewsStore()
 const { isManager } = usersStore()
-
 const list = defineModel({ type: Object, default: () => ({}) })
-const loadMore = defineModel('loadMore', { type: Boolean })
-const resizeColumn = defineModel('resizeColumn', { type: Boolean })
-const updatedPageCount = defineModel('updatedPageCount', { type: Boolean })
-
+const loadMore = defineModel('loadMore', { type: Number })
+const resizeColumn = defineModel('resizeColumn', { type: Number })
+const updatedPageCount = defineModel('updatedPageCount', { type: Number })
 const route = useRoute()
 const router = useRouter()
-
 const defaultParams = ref('')
-
 const viewUpdated = ref(false)
 const showViewModal = ref(false)
-
 function getViewType() {
   let viewType = route.params.viewType || 'list'
   let types = {
@@ -393,10 +380,8 @@ function getViewType() {
       icon: markRaw(KanbanIcon),
     },
   }
-
   return types[viewType]
 }
-
 const currentView = computed(() => {
   let _view = getView(route.query.view, route.params.viewType, props.doctype)
   return {
@@ -407,7 +392,6 @@ const currentView = computed(() => {
     is_standard: !_view || _view.is_standard,
   }
 })
-
 usePageMeta(() => {
   let label = currentView.value.label
   if (currentView.value.is_standard) {
@@ -420,7 +404,6 @@ usePageMeta(() => {
     icon: brand.favicon,
   }
 })
-
 const view = ref({
   name: '',
   label: '',
@@ -438,25 +421,20 @@ const view = ref({
   pinned: false,
   public: false,
 })
-
 const pageLength = computed(() => list.value?.data?.page_length)
 const pageLengthCount = computed(() => list.value?.data?.page_length_count)
-
 watch(loadMore, (value) => {
   if (!value) return
   updatePageLength(value, true)
 })
-
 watch(resizeColumn, (value) => {
   if (!value) return
   updateColumns()
 })
-
 watch(updatedPageCount, (value) => {
   if (!value) return
   updatePageLength(value)
 })
-
 function getParams() {
   let _view = getView(route.query.view, route.params.viewType, props.doctype)
   const view_name = _view?.name || ''
@@ -470,7 +448,6 @@ function getParams() {
   const title_field = _view?.title_field || ''
   const kanban_columns = _view?.kanban_columns || ''
   const kanban_fields = _view?.kanban_fields || ''
-
   view.value = {
     name: view_name,
     label: _view?.label || getViewType().label,
@@ -490,7 +467,6 @@ function getParams() {
     pinned: _view?.pinned || false,
     public: _view?.public || false,
   }
-
   return {
     doctype: props.doctype,
     filters: filters,
@@ -511,8 +487,7 @@ function getParams() {
     page_length_count: pageLengthCount.value,
   }
 }
-
-list.value = createResource({
+list.value = useQuery({
   url: 'crm.api.doc.get_data',
   params: getParams(),
   cache: [props.doctype, route.query.view, route.params.viewType],
@@ -540,57 +515,54 @@ list.value = createResource({
     }
   },
 })
-
 onMounted(() => useDebounceFn(reload, 100)())
-
 const isLoading = computed(() => list.value?.loading)
-
 function reload() {
   if (isLoading.value) return
   list.value.params = getParams()
   list.value.reload()
 }
-
 const showExportDialog = ref(false)
 const export_type = ref('Excel')
 const export_all = ref(false)
 const selectedRows = ref([])
-
 function updateSelections(selections) {
   selectedRows.value = Array.from(selections)
 }
-
 async function exportRows() {
   let fields = JSON.stringify(list.value.data.columns.map((f) => f.key))
-
   let filters = JSON.stringify({
     ...props.filters,
     ...list.value.params.filters,
   })
-
   let order_by = list.value.params.order_by
   let page_length = list.value.params.page_length
   if (export_all.value) {
     page_length = list.value.data.total_count
   }
-
-  let url = `/api/method/frappe.desk.reportview.export_query?file_format_type=${export_type.value}&title=${props.doctype}&doctype=${props.doctype}&fields=${fields}&filters=${encodeURIComponent(filters)}&order_by=${order_by}&page_length=${page_length}&start=0&view=Report&with_comment_count=1`
-
-  // Add selected items parameter if rows are selected
-  if (selectedRows.value?.length && !export_all.value) {
-    url += `&selected_items=${JSON.stringify(selectedRows.value)}`
+  const adapter = getAdapter()
+  if (typeof adapter.exportData === 'function') {
+    adapter.exportData({
+      doctype: props.doctype,
+      fields,
+      filters,
+      format: export_type.value,
+      pageLength: page_length,
+      selectedItems: selectedRows.value?.length && !export_all.value ? selectedRows.value : null,
+    })
+  } else {
+    let url = `/api/method/frappe.desk.reportview.export_query?file_format_type=${export_type.value}&title=${props.doctype}&doctype=${props.doctype}&fields=${fields}&filters=${encodeURIComponent(filters)}&order_by=${order_by}&page_length=${page_length}&start=0&view=Report&with_comment_count=1`
+    if (selectedRows.value?.length && !export_all.value) {
+      url += `&selected_items=${JSON.stringify(selectedRows.value)}`
+    }
+    window.location.href = url
   }
-
-  window.location.href = url
-
   showExportDialog.value = false
   export_all.value = false
   export_type.value = 'Excel'
 }
-
 let standardViews = []
 let allowedViews = props.options.allowedViews || ['list']
-
 if (allowedViews.includes('list')) {
   standardViews.push({
     name: 'list',
@@ -624,7 +596,6 @@ if (allowedViews.includes('group_by')) {
     },
   })
 }
-
 function getIcon(icon, type) {
   if (isEmoji(icon)) {
     return h('div', icon)
@@ -635,7 +606,6 @@ function getIcon(icon, type) {
   }
   return icon || markRaw(ListIcon)
 }
-
 const viewsDropdownOptions = computed(() => {
   let _views = [
     {
@@ -644,7 +614,6 @@ const viewsDropdownOptions = computed(() => {
       items: standardViews,
     },
   ]
-
   if (list.value?.data?.views) {
     list.value.data.views.forEach((view) => {
       view.label = __(view.label)
@@ -668,7 +637,6 @@ const viewsDropdownOptions = computed(() => {
       (v) => !v.pinned && !v.public && !v.is_standard,
     )
     let pinnedViews = list.value.data.views.filter((v) => v.pinned)
-
     if (savedViews.length) {
       _views.push({
         group: __('Saved Views'),
@@ -688,7 +656,6 @@ const viewsDropdownOptions = computed(() => {
       })
     }
   }
-
   _views.push({
     group: __('Actions'),
     hideLabel: true,
@@ -700,21 +667,15 @@ const viewsDropdownOptions = computed(() => {
       },
     ],
   })
-
   return _views
 })
-
 const { getFields } = getMeta(props.doctype)
-
 const customizeQuickFilter = ref(false)
-
 function showCustomizeQuickFilter() {
   customizeQuickFilter.value = true
   setupNewQuickFilters(quickFilters.data)
 }
-
 const newQuickFilters = ref([])
-
 function addQuickFilter(f) {
   if (!newQuickFilters.value.some((filter) => filter.fieldname === f.value)) {
     newQuickFilters.value.push({
@@ -724,29 +685,24 @@ function addQuickFilter(f) {
     })
   }
 }
-
 function removeQuickFilter(f) {
   newQuickFilters.value = newQuickFilters.value.filter(
     (filter) => filter.fieldname !== f.fieldname,
   )
 }
-
-const updateQuickFilters = createResource({
+const updateQuickFilters = useQuery({
   url: 'crm.api.doc.update_quick_filters',
   onSuccess() {
     customizeQuickFilter.value = false
-
     quickFilters.update({ params: { doctype: props.doctype, cached: false } })
     quickFilters.reload()
     toast.success(__('Quick filters updated successfully'))
   },
 })
-
 function saveQuickFilters() {
   let new_filters =
     newQuickFilters.value?.map((filter) => filter.fieldname) || []
   let old_filters = quickFilters.data?.map((filter) => filter.fieldname) || []
-
   updateQuickFilters.update({
     params: {
       quick_filters: JSON.stringify(new_filters),
@@ -754,14 +710,11 @@ function saveQuickFilters() {
       doctype: props.doctype,
     },
   })
-
   updateQuickFilters.fetch()
 }
-
 const quickFilterOptions = computed(() => {
-  let fields = getFields()
+  let fields = getFields().filter((f) => !f.hidden)
   if (!fields) return []
-
   let existingQuickFilters = newQuickFilters.value.map((f) => f.fieldname)
   let options = fields
     .filter((f) => f.label)
@@ -771,7 +724,6 @@ const quickFilterOptions = computed(() => {
       value: field.fieldname,
       fieldtype: field.fieldtype,
     }))
-
   if (!options.some((f) => f.fieldname === 'name')) {
     options.push({
       label: __('Name'),
@@ -779,13 +731,10 @@ const quickFilterOptions = computed(() => {
       fieldtype: 'Data',
     })
   }
-
   return options
 })
-
 const quickFilterList = computed(() => {
   let filters = quickFilters.data || []
-
   filters.forEach((filter) => {
     filter['value'] = filter.fieldtype == 'Check' ? false : ''
     if (list.value.params?.filters[filter.fieldname]) {
@@ -807,11 +756,9 @@ const quickFilterList = computed(() => {
       }
     }
   })
-
   return filters
 })
-
-const quickFilters = createResource({
+const quickFilters = useQuery({
   url: 'crm.api.doc.get_quick_filters',
   params: { doctype: props.doctype },
   cache: ['Quick Filters', props.doctype],
@@ -819,9 +766,7 @@ const quickFilters = createResource({
     setupNewQuickFilters(filters)
   },
 })
-
 if (!quickFilters.data) quickFilters.fetch()
-
 function setupNewQuickFilters(filters) {
   newQuickFilters.value = filters.map((f) => ({
     label: f.label,
@@ -829,7 +774,6 @@ function setupNewQuickFilters(filters) {
     fieldtype: f.fieldtype,
   }))
 }
-
 function applyQuickFilter(filter, value) {
   let filters = { ...list.value.params.filters }
   let field = filter.fieldname
@@ -848,7 +792,6 @@ function applyQuickFilter(filter, value) {
   }
   updateFilter(filters)
 }
-
 function updateFilter(filters) {
   viewUpdated.value = true
   if (!defaultParams.value) {
@@ -858,12 +801,10 @@ function updateFilter(filters) {
   list.value.params.filters = filters
   view.value.filters = filters
   list.value.reload()
-
   if (!route.query.view) {
     createOrUpdateStandardView()
   }
 }
-
 function updateSort(order_by) {
   viewUpdated.value = true
   if (!defaultParams.value) {
@@ -873,12 +814,10 @@ function updateSort(order_by) {
   list.value.params.order_by = order_by
   view.value.order_by = order_by
   list.value.reload()
-
   if (!route.query.view) {
     createOrUpdateStandardView()
   }
 }
-
 function updateGroupBy(group_by_field) {
   viewUpdated.value = true
   if (!defaultParams.value) {
@@ -888,12 +827,10 @@ function updateGroupBy(group_by_field) {
   list.value.params.view.group_by_field = group_by_field
   view.value.group_by_field = group_by_field
   list.value.reload()
-
   if (!route.query.view) {
     createOrUpdateStandardView()
   }
 }
-
 function updateColumns(obj) {
   if (!obj) {
     obj = {
@@ -902,7 +839,6 @@ function updateColumns(obj) {
       isDefault: false,
     }
   }
-
   if (!defaultParams.value) {
     defaultParams.value = getParams()
   }
@@ -911,23 +847,19 @@ function updateColumns(obj) {
     : obj.columns
   defaultParams.value.rows = view.value.rows = obj.isDefault ? '' : obj.rows
   view.value.load_default_columns = obj.isDefault
-
   if (obj.reset) {
     defaultParams.value.columns = getParams().columns
     defaultParams.value.rows = getParams().rows
   }
-
   if (obj.reload) {
     list.value.params = defaultParams.value
     list.value.reload()
   }
   viewUpdated.value = true
-
   if (!route.query.view) {
     createOrUpdateStandardView()
   }
 }
-
 function updateKanbanSettings(data) {
   if (data.item && data.to) {
     call('frappe.client.set_value', {
@@ -938,14 +870,11 @@ function updateKanbanSettings(data) {
     })
     return
   }
-
   if (data.fetchNewColumns) {
     fetchAndUpdateKanbanColumns(view.value)
     return
   }
-
   viewUpdated.value = true
-
   if (!defaultParams.value) {
     defaultParams.value = getParams()
   }
@@ -968,23 +897,17 @@ function updateKanbanSettings(data) {
     list.value.params.title_field = data.title_field
     view.value.title_field = data.title_field
   }
-
   list.value.reload()
-
   if (!route.query.view) {
     createOrUpdateStandardView()
   }
 }
-
 function loadMoreKanban(columnName) {
   let columns = list.value.data.kanban_columns || '[]'
-
   if (typeof columns === 'string') {
     columns = JSON.parse(columns)
   }
-
   let column = columns.find((c) => c.name == columnName)
-
   if (!column.page_length) {
     column.page_length = 40
   } else {
@@ -994,7 +917,6 @@ function loadMoreKanban(columnName) {
   view.value.kanban_columns = columns
   list.value.reload()
 }
-
 function createOrUpdateStandardView() {
   if (route.query.view) return
   view.value.doctype = props.doctype
@@ -1025,7 +947,6 @@ function createOrUpdateStandardView() {
     viewUpdated.value = false
   })
 }
-
 function updatePageLength(value, loadMore = false) {
   if (list.value.loading) return
   if (!defaultParams.value) {
@@ -1045,16 +966,13 @@ function updatePageLength(value, loadMore = false) {
   }
   list.value.reload()
 }
-
 // View Actions
 const viewActions = (view, close) => {
   let isStandard = typeof view.name === 'string'
   let _view = getView(view.name)
-
   if (isStandard) {
     _view = getView(null, view.name, props.doctype)
   }
-
   if (!_view) {
     _view = {
       label: view.label,
@@ -1062,7 +980,6 @@ const viewActions = (view, close) => {
       dt: props.doctype,
     }
   }
-
   let actions = [
     {
       group: __('Actions'),
@@ -1076,7 +993,6 @@ const viewActions = (view, close) => {
       ],
     },
   ]
-
   if (isStandard && !isDefaultView(_view)) {
     actions[0].items.unshift({
       label: __('Set As Default'),
@@ -1084,14 +1000,12 @@ const viewActions = (view, close) => {
       onClick: () => setAsDefault(_view),
     })
   }
-
   if (!isStandard && (!_view.public || isManager())) {
     actions[0].items.push({
       label: __('Edit'),
       icon: () => h(EditIcon, { class: 'h-4 w-4' }),
       onClick: () => editView(_view, close),
     })
-
     if (!_view.public) {
       actions[0].items.push({
         label: _view.pinned ? __('Unpin View') : __('Pin View'),
@@ -1099,7 +1013,6 @@ const viewActions = (view, close) => {
         onClick: () => pinView(_view),
       })
     }
-
     if (isManager()) {
       actions[0].items.push({
         label: _view.public ? __('Make Private') : __('Make Public'),
@@ -1111,7 +1024,6 @@ const viewActions = (view, close) => {
         onClick: () => publicView(_view),
       })
     }
-
     actions.push({
       group: __('Delete View'),
       hideLabel: true,
@@ -1141,17 +1053,12 @@ const viewActions = (view, close) => {
   }
   return actions
 }
-
 function isDefaultView(v) {
   let defaultView = getDefaultView()
-
   if (!defaultView || !v.name) return false
-
   return defaultView.name == v.name
 }
-
 const viewModalObj = ref({})
-
 function createView() {
   view.value.name = ''
   view.value.label = ''
@@ -1160,7 +1067,6 @@ function createView() {
   viewModalObj.value.mode = 'create'
   showViewModal.value = true
 }
-
 function setAsDefault(v) {
   call('crm.fcrm.doctype.crm_view_settings.crm_view_settings.set_as_default', {
     name: v.name,
@@ -1171,7 +1077,6 @@ function setAsDefault(v) {
     list.value.reload()
   })
 }
-
 function duplicateView(v, close) {
   v.label = v.label + __(' (New)')
   viewModalObj.value = v
@@ -1179,14 +1084,12 @@ function duplicateView(v, close) {
   showViewModal.value = true
   close()
 }
-
 function editView(v, close) {
   viewModalObj.value = v
   viewModalObj.value.mode = 'edit'
   showViewModal.value = true
   close()
 }
-
 function publicView(v) {
   call('crm.fcrm.doctype.crm_view_settings.crm_view_settings.public', {
     name: v.name,
@@ -1197,7 +1100,6 @@ function publicView(v) {
     list.value.reload()
   })
 }
-
 function pinView(v) {
   call('crm.fcrm.doctype.crm_view_settings.crm_view_settings.pin', {
     name: v.name,
@@ -1208,7 +1110,6 @@ function pinView(v) {
     list.value.reload()
   })
 }
-
 function deleteView(v, close) {
   call('crm.fcrm.doctype.crm_view_settings.crm_view_settings.delete', {
     name: v.name,
@@ -1219,7 +1120,6 @@ function deleteView(v, close) {
   })
   close()
 }
-
 function fetchAndUpdateKanbanColumns(v) {
   call(
     'crm.fcrm.doctype.crm_view_settings.crm_view_settings.fetch_and_update_kanban_columns',
@@ -1232,12 +1132,10 @@ function fetchAndUpdateKanbanColumns(v) {
     list.value.reload()
   })
 }
-
 function cancelChanges() {
   reload()
   viewUpdated.value = false
 }
-
 function saveView() {
   view.value = {
     label: view.value.label,
@@ -1260,25 +1158,19 @@ function saveView() {
   viewModalObj.value.mode = 'edit'
   showViewModal.value = true
 }
-
 function applyFilter({ event, idx, column, item, firstColumn }) {
   let restrictedFieldtypes = ['Datetime', 'Time']
   if (restrictedFieldtypes.includes(column.type) || idx === 0) return
   if (idx === 1 && firstColumn.key == '_liked_by') return
-
   event.stopPropagation()
   event.preventDefault()
-
   let filters = { ...list.value.params.filters }
-
   let value = item.name ?? item.label ?? item
-
   if (value !== null && value !== undefined && value !== '') {
     filters[column.key] = value
   } else {
     delete filters[column.key]
   }
-
   if (column.key == '_assign') {
     if (item.length > 1) {
       let target = event.target.closest('.user-avatar')
@@ -1292,7 +1184,6 @@ function applyFilter({ event, idx, column, item, firstColumn }) {
   }
   updateFilter(filters)
 }
-
 function applyLikeFilter() {
   let filters = { ...list.value.params.filters }
   if (!filters._liked_by) {
@@ -1302,16 +1193,14 @@ function applyLikeFilter() {
   }
   updateFilter(filters)
 }
-
 function likeDoc({ name, liked }) {
-  createResource({
+  useQuery({
     url: 'frappe.desk.like.toggle_like',
     params: { doctype: props.doctype, name: name, add: liked ? 'No' : 'Yes' },
     auto: true,
     onSuccess: () => reload(),
   })
 }
-
 defineExpose({
   applyFilter,
   applyLikeFilter,
@@ -1324,7 +1213,6 @@ defineExpose({
   currentView,
   updateSelections,
 })
-
 // Watchers
 watch(
   () => getView(route.query.view, route.params.viewType, props.doctype),
@@ -1334,7 +1222,6 @@ watch(
   },
   { deep: true },
 )
-
 watch([() => route, () => route.params.viewType], (value, old_value) => {
   if (value[0] === old_value[0] && value[1] === value[0]) return
   reload()

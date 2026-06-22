@@ -46,13 +46,12 @@
 </template>
 <script setup>
 import AppsIcon from '@/components/Icons/AppsIcon.vue'
-import { Popover, createResource } from 'frappe-ui'
-
+import { Popover } from 'frappe-ui'
+import { useQuery } from '@/composables/useQuery'
 defineProps({
   active: { type: Boolean, default: false },
 })
-
-const apps = createResource({
+const apps = useQuery({
   url: 'frappe.apps.get_apps',
   cache: 'apps',
   auto: true,
@@ -74,7 +73,6 @@ const apps = createResource({
         route: app.route,
       })
     })
-
     return _apps
   },
 })

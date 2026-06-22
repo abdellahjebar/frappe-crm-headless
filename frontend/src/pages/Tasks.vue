@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <LayoutHeader>
     <template #left-header>
       <ViewBreadcrumbs v-model="viewControls" routeName="Tasks" />
@@ -11,7 +11,7 @@
       <Button
         variant="solid"
         :label="__('Create')"
-        iconLeft="plus"
+        iconLeft="lucide-plus"
         @click="createTask"
       />
     </template>
@@ -199,8 +199,11 @@ import { useDoctypeModal } from '@/composables/doctypeModal'
 import { getMeta } from '@/stores/meta'
 import { usersStore } from '@/stores/users'
 import { formatDate, timeAgo } from '@/utils'
-import { useOnboarding, useTelemetry } from 'frappe-ui/frappe'
-import { Tooltip, Avatar, TextEditor, Dropdown, call } from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
+import { useOnboarding } from '@/composables/useOnboarding'
+import { Tooltip, Avatar, Dropdown } from 'frappe-ui'
+import { call } from '@/api/call'
+import TextEditor from '@/components/TextEditor.vue'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 

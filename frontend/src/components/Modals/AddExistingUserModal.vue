@@ -15,11 +15,9 @@
           }}
         </p>
       </div>
-
       <label class="block text-xs text-ink-gray-5 mb-1.5">
         {{ __('Users') }}
       </label>
-
       <div class="p-2 group bg-surface-gray-2 hover:bg-surface-gray-3 rounded">
         <EmailMultiSelect
           v-if="users?.data?.crmUsers?.length"
@@ -61,21 +59,17 @@
     </template>
   </Dialog>
 </template>
-
 <script setup>
 import EmailMultiSelect from '@/components/Controls/EmailMultiSelect.vue'
 import { validateEmail } from '@/utils'
 import { usersStore } from '@/stores/users'
-import { createResource, toast } from 'frappe-ui'
+import { toast } from 'frappe-ui'
 import { ref, computed } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const { users, isAdmin } = usersStore()
-
 const show = defineModel({ type: Boolean })
-
 const newUsers = ref([])
 const role = ref('Sales User')
-
 const description = computed(() => {
   return {
     'System Manager':
@@ -86,7 +80,6 @@ const description = computed(() => {
       'Can work with leads and deals and create private views (reports).',
   }[role.value]
 })
-
 const roleOptions = computed(() => {
   return [
     { value: 'Sales User', label: __('Sales User') },
@@ -94,8 +87,7 @@ const roleOptions = computed(() => {
     ...(isAdmin() ? [{ value: 'System Manager', label: __('Admin') }] : []),
   ]
 })
-
-const addNewUser = createResource({
+const addNewUser = useQuery({
   url: 'crm.api.user.add_existing_users',
   makeParams: () => ({
     users: JSON.stringify(newUsers.value),

@@ -53,7 +53,9 @@
 <script setup>
 import UserAvatar from '@/components/UserAvatar.vue'
 import { timeAgo, formatDate } from '@/utils'
-import { Tooltip, Dropdown, TextEditor, call, toast } from 'frappe-ui'
+import { Tooltip, Dropdown, toast } from 'frappe-ui'
+import { call } from '@/api/call'
+import TextEditor from '@/components/TextEditor.vue'
 import { usersStore } from '@/stores/users'
 
 defineProps({

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Dialog v-model:open="show" :size="'4xl'">
     <template #title>
       <h3
@@ -47,29 +47,26 @@
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
 import FieldLayoutEditor from '@/components/FieldLayoutEditor.vue'
 import { useDebounceFn } from '@vueuse/core'
-import { useTelemetry } from 'frappe-ui/frappe'
-import { Dialog, Badge, call, createResource } from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
+import { Dialog, Badge } from 'frappe-ui'
+import { call } from '@/api/call'
 import { ref, watch, onMounted, nextTick } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   doctype: { type: String, default: 'CRM Lead' },
   onlyRequired: { type: Boolean, default: false },
 })
-
 const { capture } = useTelemetry()
-
 const show = defineModel({ type: Boolean })
 const _doctype = ref(props.doctype)
 const loading = ref(false)
 const dirty = ref(false)
 const preview = ref(false)
-
 function getParams() {
   let type = props.onlyRequired ? 'Required Fields' : 'Quick Entry'
   return { doctype: _doctype.value, type }
 }
-
-const tabs = createResource({
+const tabs = useQuery({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_fields_layout',
   cache: ['QuickEntryModal', _doctype.value, props.onlyRequired],
   params: getParams(),
@@ -77,7 +74,6 @@ const tabs = createResource({
     tabs.originalData = JSON.parse(JSON.stringify(data))
   },
 })
-
 watch(
   () => tabs?.data,
   () => {
@@ -86,16 +82,13 @@ watch(
   },
   { deep: true },
 )
-
 onMounted(() => useDebounceFn(reload, 100)())
-
 function reload() {
   nextTick(() => {
     tabs.params = getParams()
     tabs.reload()
   })
 }
-
 function saveChanges() {
   let _tabs = JSON.parse(JSON.stringify(tabs.data))
   _tabs.forEach((tab) => {

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Dialog v-model:open="show" :title="__('Change Password')">
     <template #default>
       <div class="flex flex-col gap-4">
@@ -52,7 +52,6 @@
             {{ confirmPasswordMessage }}
           </p>
         </div>
-
         <Button
           variant="solid"
           :label="__('Update')"
@@ -72,20 +71,17 @@
 </template>
 <script setup>
 import LockKeyhole from '~icons/lucide/lock-keyhole'
-import { Dialog, toast, createResource, Password } from 'frappe-ui'
-import { useOnboarding } from 'frappe-ui/frappe'
+import { Dialog, toast, Password } from 'frappe-ui'
+import { useOnboarding } from '@/composables/useOnboarding'
 import { ref, watch } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const show = defineModel({ type: Boolean })
-
 const { updateOnboardingStep } = useOnboarding('frappecrm')
-
 const currentPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
 const confirmPasswordMessage = ref('')
-
-const updatePassword = createResource({
+const updatePassword = useQuery({
   url: 'crm.api.user.change_password',
   makeParams() {
     return {
@@ -106,15 +102,12 @@ const updatePassword = createResource({
     toast.error(err.messages?.[0] || __('Failed to update password'))
   },
 })
-
 function isStrongPassword(password) {
   const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d\s]).{8,}$/
   return regex.test(password)
 }
-
 watch([currentPassword, newPassword, confirmPassword], () => {
   confirmPasswordMessage.value = ''
-
   if (
     currentPassword.value &&
     newPassword.value &&
@@ -125,7 +118,6 @@ watch([currentPassword, newPassword, confirmPassword], () => {
     )
     return
   }
-
   if (newPassword.value && newPassword.value.length < 8) {
     confirmPasswordMessage.value = __('Password must be at least 8 characters')
     return
@@ -135,7 +127,6 @@ watch([currentPassword, newPassword, confirmPassword], () => {
     )
     return
   }
-
   if (
     confirmPassword.value.length &&
     newPassword.value !== confirmPassword.value

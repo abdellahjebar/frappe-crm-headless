@@ -326,23 +326,9 @@
     :onCancel="() => (showConfirmDialog.show = false)"
   />
 </template>
-
 <script setup>
-import {
-  Badge,
-  Button,
-  call,
-  createResource,
-  ErrorMessage,
-  FormControl,
-  FormLabel,
-  LoadingIndicator,
-  Popover,
-  Select,
-  Switch,
-  toast,
-  ConfirmDialog,
-} from 'frappe-ui'
+import { Badge, Button, ErrorMessage, FormControl, FormLabel, LoadingIndicator, Popover, Select, Switch, toast, ConfirmDialog } from 'frappe-ui'
+import { call } from '@/api/call'
 import {
   onMounted,
   onUnmounted,
@@ -358,14 +344,13 @@ import AssigneeRules from './AssigneeRules.vue'
 import { globalStore } from '@/stores/global'
 import { disableSettingModalOutsideClick } from '@/composables/settings'
 import { convertToConditions, validateConditions } from '@/utils'
-
+import { useQuery } from '@/composables/useQuery'
 const isDirty = ref(false)
 const initialData = ref(null)
 const isLoading = ref(false)
 const updateStep = inject('updateStep')
 const step = inject('step')
 const { $dialog } = globalStore()
-
 const showConfirmDialog = ref({
   show: false,
   title: '',
@@ -380,7 +365,6 @@ const documentType = computed(() =>
     : __('deals'),
 )
 const deskUrl = `${window.location.origin}/app/assignment-rule/${step.value.data?.name}`
-
 const defaultAssignmentDays = [
   'Monday',
   'Tuesday',
@@ -390,7 +374,6 @@ const defaultAssignmentDays = [
   'Saturday',
   'Sunday',
 ]
-
 const assignmentRuleData = ref({
   assignCondition: '',
   unassignCondition: '',
@@ -406,11 +389,9 @@ const assignmentRuleData = ref({
   assignmentDays: defaultAssignmentDays,
   documentType: 'CRM Lead',
 })
-
 const validateAssignmentRule = (key, skipConditionCheck = false) => {
   const validateField = (field) => {
     if (key && field !== key) return
-
     switch (field) {
       case 'assignmentRuleName':
         if (assignmentRuleData.value.assignmentRuleName?.length == 0) {
@@ -433,7 +414,6 @@ const validateAssignmentRule = (key, skipConditionCheck = false) => {
           assignmentRuleData.value.assignConditionJson?.length > 0
             ? ''
             : __('Assign Condition is required')
-
         if (!validateConditions(assignmentRuleData.value.assignConditionJson)) {
           assignmentRuleErrors.value.assignConditionError = __(
             'Assign Conditions are invalid',
@@ -441,7 +421,6 @@ const validateAssignmentRule = (key, skipConditionCheck = false) => {
         } else {
           assignmentRuleErrors.value.assignConditionError = ''
         }
-
         break
       case 'unassignCondition':
         if (skipConditionCheck) {
@@ -474,16 +453,13 @@ const validateAssignmentRule = (key, skipConditionCheck = false) => {
         break
     }
   }
-
   if (key) {
     validateField(key)
   } else {
     Object.keys(assignmentRuleErrors.value).forEach(validateField)
   }
-
   return assignmentRuleErrors.value
 }
-
 const resetAssignmentRuleData = () => {
   assignmentRuleData.value = {
     assignCondition: '',
@@ -501,7 +477,6 @@ const resetAssignmentRuleData = () => {
     documentType: 'CRM Lead',
   }
 }
-
 const assignmentRuleErrors = ref({
   assignmentRuleName: '',
   assignCondition: '',
@@ -511,20 +486,17 @@ const assignmentRuleErrors = ref({
   description: '',
   assignmentDays: '',
 })
-
 const resetAssignmentRuleErrors = () => {
   Object.keys(assignmentRuleErrors.value).forEach((key) => {
     assignmentRuleErrors.value[key] = ''
   })
 }
-
 provide('assignmentRuleData', assignmentRuleData)
 provide('assignmentRuleErrors', assignmentRuleErrors)
 provide('validateAssignmentRule', validateAssignmentRule)
 provide('resetAssignmentRuleData', resetAssignmentRuleData)
 provide('resetAssignmentRuleErrors', resetAssignmentRuleErrors)
-
-const getAssignmentRuleData = createResource({
+const getAssignmentRuleData = useQuery({
   url: 'frappe.client.get',
   params: {
     doctype: 'Assignment Rule',
@@ -547,14 +519,11 @@ const getAssignmentRuleData = createResource({
       assignmentDays: data.assignment_days.map((day) => day.day),
       documentType: data.document_type,
     }
-
     initialData.value = JSON.stringify(assignmentRuleData.value)
-
     const conditionsAvailable =
       assignmentRuleData.value.assignCondition?.length > 0
     const conditionsJsonAvailable =
       assignmentRuleData.value.assignConditionJson?.length > 0
-
     if (conditionsAvailable && !conditionsJsonAvailable) {
       useNewUI.value = false
       isOldSla.value = true
@@ -564,11 +533,9 @@ const getAssignmentRuleData = createResource({
     }
   },
 })
-
 if (!step.value.data) {
   initialData.value = JSON.stringify(assignmentRuleData.value)
 }
-
 const goBack = () => {
   if (isDirty.value && !showConfirmDialog.value.show) {
     $dialog({
@@ -593,7 +560,6 @@ const goBack = () => {
   updateStep('list', null)
   showConfirmDialog.value.show = false
 }
-
 const saveAssignmentRule = () => {
   const validationErrors = validateAssignmentRule(undefined, !useNewUI.value)
   const expandedErrors = Object.keys(validationErrors)
@@ -614,7 +580,6 @@ const saveAssignmentRule = () => {
         label: fieldLabels[key] || key,
       }
     })
-
   if (expandedErrors.length > 0) {
     let missingFields = expandedErrors
       .filter((e) => e.message.toLowerCase().includes('required'))
@@ -622,7 +587,6 @@ const saveAssignmentRule = () => {
     let invalidFields = expandedErrors
       .filter((e) => !e.message.toLowerCase().includes('required'))
       .map((e) => e.label)
-
     let message = ''
     if (missingFields.length > 0) {
       message = __('Missing mandatory fields: {0}', [missingFields.join(', ')])
@@ -653,10 +617,9 @@ const saveAssignmentRule = () => {
     createAssignmentRule()
   }
 }
-
 const createAssignmentRule = () => {
   isLoading.value = true
-  createResource({
+  useQuery({
     url: 'frappe.client.insert',
     params: {
       doc: {
@@ -704,7 +667,6 @@ const createAssignmentRule = () => {
     },
   })
 }
-
 const priorityOptions = [
   { label: 'Low', value: '0' },
   { label: 'Low-Medium', value: '1' },
@@ -712,7 +674,6 @@ const priorityOptions = [
   { label: 'Medium-High', value: '3' },
   { label: 'High', value: '4' },
 ]
-
 const updateAssignmentRule = async () => {
   isLoading.value = true
   await call('frappe.client.set_value', {
@@ -779,7 +740,6 @@ const updateAssignmentRule = async () => {
   isLoading.value = false
   toast.success(__('Assignment Rule Updated'))
 }
-
 watch(
   assignmentRuleData,
   (newVal) => {
@@ -793,17 +753,14 @@ watch(
   },
   { deep: true },
 )
-
 const beforeUnloadHandler = (event) => {
   if (!isDirty.value) return
   event.preventDefault()
   event.returnValue = true
 }
-
 onMounted(() => {
   addEventListener('beforeunload', beforeUnloadHandler)
 })
-
 onUnmounted(() => {
   resetAssignmentRuleErrors()
   resetAssignmentRuleData()

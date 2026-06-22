@@ -1,4 +1,5 @@
-import { call, toast } from 'frappe-ui'
+import { toast } from 'frappe-ui'
+import { call } from '@/api/call'
 
 export function useRemoveNode({ doctype, nodes, enrichedNodes }) {
   async function removeNode(node, mode = 'simple') {

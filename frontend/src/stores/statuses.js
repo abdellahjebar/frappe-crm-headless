@@ -1,8 +1,8 @@
-import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
+﻿import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
 import { parseColor, isTranslatable } from '@/utils'
 import { defineStore } from 'pinia'
-import { useTelemetry } from 'frappe-ui/frappe'
-import { createListResource } from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
+import { useList } from '@/composables/useList'
 import { reactive, h } from 'vue'
 
 export const statusesStore = defineStore('crm-statuses', () => {
@@ -12,7 +12,7 @@ export const statusesStore = defineStore('crm-statuses', () => {
 
   const { capture } = useTelemetry()
 
-  const leadStatuses = createListResource({
+  const leadStatuses = useList({
     doctype: 'CRM Lead Status',
     fields: ['name', 'color', 'position', 'type'],
     orderBy: 'position asc',
@@ -28,7 +28,7 @@ export const statusesStore = defineStore('crm-statuses', () => {
     },
   })
 
-  const dealStatuses = createListResource({
+  const dealStatuses = useList({
     doctype: 'CRM Deal Status',
     fields: ['name', 'color', 'position', 'type'],
     orderBy: 'position asc',
@@ -44,7 +44,7 @@ export const statusesStore = defineStore('crm-statuses', () => {
     },
   })
 
-  const communicationStatuses = createListResource({
+  const communicationStatuses = useList({
     doctype: 'CRM Communication Status',
     fields: ['name'],
     cache: 'communication-statuses',

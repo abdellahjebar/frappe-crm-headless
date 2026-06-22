@@ -109,23 +109,15 @@
   </div>
   <EditResponseResolutionModal v-model="dialog" :priority="priorityData" />
 </template>
-
 <script setup>
-import {
-  Button,
-  Checkbox,
-  createResource,
-  Dropdown,
-  ErrorMessage,
-  toast,
-} from 'frappe-ui'
+import { Button, Checkbox, Dropdown, ErrorMessage, toast } from 'frappe-ui'
 import { slaData, slaDataErrors, validateSlaData } from './utils'
 import { ConfirmDelete, getGridTemplateColumnsForTable } from '../../../utils'
 import { computed, inject, provide, reactive, ref } from 'vue'
 import EditResponseResolutionModal from './EditResponseResolutionModal.vue'
 import DurationInput from '../../Controls/DurationInput.vue'
 import { watchDebounced } from '@vueuse/core'
-
+import { useQuery } from '@/composables/useQuery'
 const step = inject('step')
 const isConfirmingDelete = ref(false)
 const dialog = ref(false)
@@ -134,11 +126,9 @@ const priorityData = ref({
   first_response_time: '',
   default_priority: '',
 })
-
 const priorityOptions = reactive([])
 provide('priorityOptions', priorityOptions)
-
-createResource({
+useQuery({
   url: 'frappe.client.get_list',
   params: {
     doctype: 'CRM Communication Status',
@@ -165,7 +155,6 @@ createResource({
     }
   },
 })
-
 const columns = computed(() => [
   {
     label: __('Priority'),
@@ -182,7 +171,6 @@ const columns = computed(() => [
     key: 'default_priority',
   },
 ])
-
 const dropdownOptions = (priority) => [
   {
     label: __('Edit'),
@@ -194,36 +182,29 @@ const dropdownOptions = (priority) => [
     isConfirmingDelete,
   }),
 ]
-
 const addRow = () => {
   const existingPriorities = slaData.value.priorities.map((p) => p.priority)
   const availablePriorities = priorityOptions.filter(
     (p) => !existingPriorities.includes(p.value),
   )
-
   if (availablePriorities.length === 0) {
     toast.error(__('All available priorities have already been added'))
     return
   }
-
   const newPriority = availablePriorities[0].value
-
   slaData.value.priorities.push({
     priority: newPriority,
     first_response_time: 60 * 60,
     default_priority: slaData.value.priorities.length === 0,
   })
 }
-
 const deleteItem = (priority) => {
   if (!isConfirmingDelete.value) {
     isConfirmingDelete.value = true
     return
   }
-
   slaData.value.priorities.splice(slaData.value.priorities.indexOf(priority), 1)
 }
-
 const editItem = (priority) => {
   dialog.value = true
   priorityData.value = {
@@ -232,14 +213,12 @@ const editItem = (priority) => {
     default_priority: priority.default_priority,
   }
 }
-
 const onDefaultPriorityChange = (priority, defaultPriority) => {
   slaData.value.priorities.forEach((p) => {
     p.default_priority = false
   })
   priority.default_priority = defaultPriority
 }
-
 watchDebounced(
   () => [...slaData.value.priorities],
   () => validateSlaData('priorities'),

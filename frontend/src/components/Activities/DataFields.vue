@@ -54,56 +54,44 @@
     "
   />
 </template>
-
 <script setup>
 import EditIcon from '@/components/Icons/EditIcon.vue'
 import DataFieldsModal from '@/components/Modals/DataFieldsModal.vue'
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
-import { Badge, createResource } from 'frappe-ui'
+import { Badge } from 'frappe-ui'
 import LoadingIndicator from '@/components/Icons/LoadingIndicator.vue'
 import { usersStore } from '@/stores/users'
 import { useDocument } from '@/data/document'
 import { isMobileView } from '@/composables/settings'
 import { ref, watch, getCurrentInstance } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   doctype: { type: String, required: true },
   docname: { type: String, required: true },
 })
-
 const emit = defineEmits(['beforeSave', 'afterSave'])
-
 const { isManager } = usersStore()
-
 const instance = getCurrentInstance()
 const attrs = instance?.vnode?.props ?? {}
-
 const showDataFieldsModal = ref(false)
-
 const { document } = useDocument(props.doctype, props.docname)
-
-const tabs = createResource({
+const tabs = useQuery({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_fields_layout',
   cache: ['DataFields', props.doctype],
   params: { doctype: props.doctype, type: 'Data Fields' },
   auto: true,
 })
-
 function saveChanges() {
   if (!document.isDirty) return
-
   const updatedDoc = { ...document.doc }
   const oldDoc = { ...document.originalDoc }
-
   const changes = Object.keys(updatedDoc).reduce((acc, key) => {
     if (JSON.stringify(updatedDoc[key]) !== JSON.stringify(oldDoc[key])) {
       acc[key] = updatedDoc[key]
     }
     return acc
   }, {})
-
   const hasListener = attrs['onBeforeSave'] !== undefined
-
   if (hasListener) {
     emit('beforeSave', changes)
   } else {
@@ -112,7 +100,6 @@ function saveChanges() {
     })
   }
 }
-
 watch(
   () => document.doc,
   (newValue, oldValue) => {

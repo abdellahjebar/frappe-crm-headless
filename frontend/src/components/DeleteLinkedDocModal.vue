@@ -129,12 +129,11 @@
     </template>
   </Dialog>
 </template>
-
 <script setup>
-import { createResource, call } from 'frappe-ui'
+import { call } from '@/api/call'
 import { useRouter } from 'vue-router'
 import { computed, ref } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const show = defineModel({ type: Boolean })
 const router = useRouter()
 const props = defineProps({
@@ -149,13 +148,11 @@ const viewControls = ref({
     viewControls.value.selections = Array.from(selections || [])
   },
 })
-
 const confirmDeleteInfo = ref({
   show: false,
   title: '',
 })
-
-const linkedDocsResource = createResource({
+const linkedDocsResource = useQuery({
   url: 'crm.api.doc.get_linked_docs_of_document',
   params: {
     doctype: props.doctype,
@@ -168,7 +165,6 @@ const linkedDocsResource = createResource({
     }
   },
 })
-
 const linkedDocs = computed(() => {
   return (
     linkedDocsResource.data?.map((doc) => ({
@@ -177,12 +173,10 @@ const linkedDocs = computed(() => {
     })) || []
   )
 })
-
 const cancel = () => {
   confirmDeleteInfo.value.show = false
   viewControls.value.updateSelections([])
 }
-
 const unlinkLinkedDoc = (doc) => {
   let selectedDocs = []
   if (viewControls.value.selections.length > 0) {
@@ -199,7 +193,6 @@ const unlinkLinkedDoc = (doc) => {
       docname: doc.reference_docname,
     }))
   }
-
   call('crm.api.doc.remove_linked_doc_reference', {
     items: selectedDocs,
     remove_contact: props.doctype == 'Contact',
@@ -212,7 +205,6 @@ const unlinkLinkedDoc = (doc) => {
     }
   })
 }
-
 const confirmDelete = () => {
   const items =
     viewControls.value.selections.length == 0
@@ -225,7 +217,6 @@ const confirmDelete = () => {
     delete: true,
   }
 }
-
 const confirmUnlink = () => {
   const items =
     viewControls.value.selections.length == 0
@@ -238,7 +229,6 @@ const confirmUnlink = () => {
     delete: false,
   }
 }
-
 const removeDocLinks = () => {
   unlinkLinkedDoc({
     reference_doctype: props.doctype,
@@ -247,7 +237,6 @@ const removeDocLinks = () => {
   })
   viewControls.value.updateSelections([])
 }
-
 const deleteDoc = async () => {
   await call('frappe.client.delete', {
     doctype: props.doctype,

@@ -66,23 +66,18 @@
     </template>
   </Dialog>
 </template>
-
 <script setup>
-import { TextEditor, createListResource } from 'frappe-ui'
+import TextEditor from '@/components/TextEditor.vue'
 import { ref, computed, nextTick, watch, onMounted } from 'vue'
-
+import { useList } from '@/composables/useList'
 const props = defineProps({
   doctype: { type: String, default: '' },
 })
-
 const show = defineModel({ type: Boolean })
 const searchInput = ref('')
-
 const emit = defineEmits(['send'])
-
 const search = ref('')
-
-const templates = createListResource({
+const templates = useList({
   type: 'list',
   doctype: 'WhatsApp Templates',
   cache: ['whatsappTemplates'],
@@ -91,13 +86,11 @@ const templates = createListResource({
   orderBy: 'modified desc',
   pageLength: 99999,
 })
-
 onMounted(() => {
   if (templates.data == null) {
     templates.fetch()
   }
 })
-
 const filteredTemplates = computed(() => {
   return (
     templates.data?.filter((template) => {
@@ -105,11 +98,9 @@ const filteredTemplates = computed(() => {
     }) ?? []
   )
 })
-
 function newWhatsappTemplate() {
   show.value = false
   window.open('/app/whatsapp-templates/new')
 }
-
 watch(show, (value) => value && nextTick(() => searchInput.value?.el?.focus()))
 </script>

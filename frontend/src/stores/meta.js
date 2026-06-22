@@ -1,4 +1,4 @@
-import { createResource } from 'frappe-ui'
+import { useQuery } from '@/composables/useQuery'
 import { noValueFieldTypes, standardFieldsMeta } from '@/utils/model.js'
 import { formatCurrency, formatNumber } from '@/utils/numberFormat.js'
 import { computed, reactive } from 'vue'
@@ -7,7 +7,7 @@ const doctypesMeta = reactive({})
 const userSettings = reactive({})
 
 export function getMeta(doctype) {
-  const meta = createResource({
+  const meta = useQuery({
     url: 'frappe.desk.form.load.getdoctype',
     params: {
       doctype: doctype,
@@ -81,6 +81,27 @@ export function getMeta(doctype) {
     return userSettings[parentDoctype]['GridView'][doctype]
   }
 
+  // Returns a cloned, transformed copy of a single field from doctypesMeta.
+  // Never mutates the raw meta object — callers receive their own copy.
+  function getField(fieldname, { dt = doctype } = {}) {
+    const raw = (doctypesMeta[dt]?.fields || []).find(
+      (f) => f.fieldname === fieldname,
+    )
+    if (!raw) return null
+    const f = { ...raw }
+    if (f.fieldtype === 'Select' && typeof f.options === 'string') {
+      const opts = f.options.split('\n').map((o) => ({ label: o, value: o }))
+      if (opts[0]?.value !== '' && f.reqd !== 1) {
+        opts.unshift({ label: '', value: '' })
+      }
+      f.options = opts
+    }
+    if (f.fieldtype === 'Link' && f.options === 'User') {
+      f.fieldtype = 'User'
+    }
+    return f
+  }
+
   function getFields(options = {}) {
     let {
       dt = doctype,
@@ -90,42 +111,22 @@ export function getMeta(doctype) {
     } = options
 
     let fieldsMeta =
-      doctypesMeta[dt]?.fields
+      (doctypesMeta[dt]?.fields || [])
         .filter(
           (f) =>
-            !f.hidden &&
             (!restrictNoValueFields ||
               !noValueFieldTypes.includes(f.fieldtype)) &&
             (!restrictedFieldTypes.length ||
               !restrictedFieldTypes.includes(f.fieldtype)),
         )
-        .map((f) => {
-          if (f.fieldtype === 'Select' && typeof f.options === 'string') {
-            f.options = f.options.split('\n').map((option) => {
-              return {
-                label: option,
-                value: option,
-              }
-            })
-
-            if (f.options[0]?.value !== '' && f.reqd !== 1) {
-              f.options.unshift({
-                label: '',
-                value: '',
-              })
-            }
-          }
-          if (f.fieldtype === 'Link' && f.options == 'User') {
-            f.fieldtype = 'User'
-          }
-          return f
-        }) || []
+        .map((f) => getField(f.fieldname, { dt }))
+        .filter(Boolean)
 
     if (withStandardFields) {
       fieldsMeta = fieldsMeta.concat(standardFieldsMeta)
     }
 
-    return fieldsMeta || []
+    return fieldsMeta
   }
 
   function saveUserSettings(parentDoctype, key, value, callback) {
@@ -139,7 +140,7 @@ export function getMeta(doctype) {
     }
 
     if (JSON.stringify(oldUserSettings) !== JSON.stringify(newUserSettings)) {
-      return createResource({
+      return useQuery({
         url: 'frappe.model.utils.user_settings.save',
         params: {
           doctype: parentDoctype,
@@ -167,6 +168,7 @@ export function getMeta(doctype) {
     doctypeMeta,
     doctypesMeta,
     userSettings,
+    getField,
     getFields,
     getGridSettings,
     getGridViewSettings,

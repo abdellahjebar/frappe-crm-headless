@@ -1,6 +1,5 @@
-import { getConfig } from 'frappe-ui'
-
-// Custom translation map — set via setTranslations() for non-Frappe backends.
+// Active translation map. Frappe users: call setTranslations(frappe.boot.lang_dict) after boot.
+// Custom backend users: call setTranslations({ 'Save': 'Enregistrer', ... }) at app init.
 let _customTranslations = {}
 
 /**
@@ -30,10 +29,7 @@ function format(message, replace) {
 }
 
 function translate(message, replace, context = null) {
-  // Frappe populates translatedMessages via setConfig(); custom backends use setTranslations().
-  // Both are merged, with custom translations taking precedence.
-  const frappeMessages = getConfig('translatedMessages') || {}
-  const translatedMessages = { ...frappeMessages, ..._customTranslations }
+  const translatedMessages = _customTranslations
 
   let translatedMessage = ''
 

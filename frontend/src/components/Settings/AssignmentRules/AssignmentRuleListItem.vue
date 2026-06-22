@@ -67,34 +67,22 @@
     </template>
   </Dialog>
 </template>
-
 <script setup>
-import {
-  Button,
-  createResource,
-  Dialog,
-  Dropdown,
-  FormControl,
-  Switch,
-  toast,
-} from 'frappe-ui'
+import { Button, Dialog, Dropdown, FormControl, Switch, toast } from 'frappe-ui'
 import { inject, ref, reactive, watch } from 'vue'
 import { ConfirmDelete } from '../../../utils'
-
+import { useQuery } from '@/composables/useQuery'
 const assignmentRulesList = inject('assignmentRulesList')
 const updateStep = inject('updateStep')
-
 const props = defineProps({
   data: { type: Object, required: true },
 })
-
 const localData = reactive({ ...props.data })
 watch(
   () => props.data,
   (val) => Object.assign(localData, val),
   { deep: true },
 )
-
 const priorityOptions = [
   { label: 'Low', value: '0' },
   { label: 'Low-Medium', value: '1' },
@@ -102,16 +90,13 @@ const priorityOptions = [
   { label: 'Medium-High', value: '3' },
   { label: 'High', value: '4' },
 ]
-
 const duplicateDialog = ref({
   show: false,
   name: '',
 })
-
 const isConfirmingDelete = ref(false)
-
 const deleteAssignmentRule = () => {
-  createResource({
+  useQuery({
     url: 'frappe.client.delete',
     params: {
       doctype: 'Assignment Rule',
@@ -125,7 +110,6 @@ const deleteAssignmentRule = () => {
     auto: true,
   })
 }
-
 const dropdownOptions = [
   {
     label: __('Duplicate'),
@@ -142,9 +126,8 @@ const dropdownOptions = [
     isConfirmingDelete,
   }),
 ]
-
 const duplicate = () => {
-  createResource({
+  useQuery({
     url: 'crm.api.assignment_rule.duplicate_assignment_rule',
     params: {
       docname: props.data.name,
@@ -160,11 +143,9 @@ const duplicate = () => {
     auto: true,
   })
 }
-
 const onPriorityChange = () => {
   setAssignmentRuleValue('priority', localData.priority)
 }
-
 const onToggle = () => {
   if (!props.data.users_exists && props.data.disabled) {
     toast.error(__('Cannot enable rule without adding users in it'))
@@ -172,9 +153,8 @@ const onToggle = () => {
   }
   setAssignmentRuleValue('disabled', !props.data.disabled, 'status')
 }
-
 const setAssignmentRuleValue = (key, value, fieldName = undefined) => {
-  createResource({
+  useQuery({
     url: 'frappe.client.set_value',
     params: {
       doctype: 'Assignment Rule',

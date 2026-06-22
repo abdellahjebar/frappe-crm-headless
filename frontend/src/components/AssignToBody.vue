@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div
     class="flex flex-col gap-2 my-2 w-[470px] rounded-lg bg-surface-elevation-2 shadow-2xl ring-1 ring-black p-3 ring-opacity-5 focus:outline-none"
   >
@@ -70,47 +70,38 @@
     </div>
   </div>
 </template>
-
 <script setup>
 import UserAvatar from '@/components/UserAvatar.vue'
 import Link from '@/components/Controls/Link.vue'
 import { usersStore } from '@/stores/users'
-import { Tooltip, Switch, createResource } from 'frappe-ui'
-import { useTelemetry } from 'frappe-ui/frappe'
+import { Tooltip, Switch } from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
 import { ref, watch } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   doctype: { type: String, default: '' },
   docname: { type: String, default: '' },
   open: { type: Boolean, default: false },
   onUpdate: { type: Function, default: null },
 })
-
 const { capture } = useTelemetry()
-
 const assignees = defineModel({ type: Array, default: () => [] })
 const oldAssignees = ref([])
 const assignToMe = ref(false)
-
 const error = ref('')
-
 const { users, getUser } = usersStore()
-
 const removeValue = (value) => {
   if (value === getUser('').name) {
     assignToMe.value = false
   }
-
   assignees.value = assignees.value.filter(
     (assignee) => assignee.name !== value,
   )
 }
-
 const addValue = (value) => {
   if (value === getUser('').name) {
     assignToMe.value = true
   }
-
   error.value = ''
   let obj = {
     name: value,
@@ -121,7 +112,6 @@ const addValue = (value) => {
     assignees.value.push(obj)
   }
 }
-
 watch(assignToMe, (val) => {
   let user = getUser('')
   if (val) {
@@ -130,13 +120,11 @@ watch(assignToMe, (val) => {
     removeValue(user.name)
   }
 })
-
 watch(
   () => props.open,
   (val) => {
     if (val) {
       oldAssignees.value = [...(assignees.value || [])]
-
       assignToMe.value = assignees.value.some(
         (assignee) => assignee.name === getUser('').name,
       )
@@ -146,23 +134,19 @@ watch(
   },
   { immediate: true },
 )
-
 async function updateAssignees() {
   if (JSON.stringify(oldAssignees.value) === JSON.stringify(assignees.value))
     return
-
   const removedAssignees = oldAssignees.value
     .filter(
       (assignee) => !assignees.value.find((a) => a.name === assignee.name),
     )
     .map((assignee) => assignee.name)
-
   const addedAssignees = assignees.value
     .filter(
       (assignee) => !oldAssignees.value.find((a) => a.name === assignee.name),
     )
     .map((assignee) => assignee.name)
-
   if (props.onUpdate) {
     props.onUpdate(
       addedAssignees,
@@ -179,8 +163,7 @@ async function updateAssignees() {
     }
   }
 }
-
-const addAssignees = createResource({
+const addAssignees = useQuery({
   url: 'frappe.desk.form.assign_to.add',
   makeParams: (addedAssignees) => ({
     doctype: props.doctype,
@@ -191,8 +174,7 @@ const addAssignees = createResource({
     capture('assign_to', { doctype: props.doctype })
   },
 })
-
-const removeAssignees = createResource({
+const removeAssignees = useQuery({
   url: 'crm.api.doc.remove_assignments',
   makeParams: (removedAssignees) => ({
     doctype: props.doctype,

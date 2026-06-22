@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <ActivityHeader
     v-model="tabIndex"
     v-model:showWhatsappTemplates="showWhatsappTemplates"
@@ -309,7 +309,6 @@
                   </div>
                 </span>
               </div>
-
               <div class="ml-auto whitespace-nowrap">
                 <Tooltip :text="formatDate(activity.creation)">
                   <div class="text-sm text-ink-gray-5">
@@ -376,7 +375,6 @@
                     </div>
                   </span>
                 </div>
-
                 <div class="ml-auto whitespace-nowrap">
                   <Tooltip :text="formatDate(a.creation)">
                     <div class="text-sm text-ink-gray-5">
@@ -400,6 +398,7 @@
     </div>
     <EmptyState
       v-else
+      :name="title"
       :title="emptyText"
       :description="emptyTextDescription"
       :icon="emptyTextIcon"
@@ -492,8 +491,8 @@ import { globalStore } from '@/stores/global'
 import { usersStore } from '@/stores/users'
 import { whatsappEnabled } from '@/composables/whatsapp'
 import { useDocument } from '@/data/document'
-import { useTelemetry } from 'frappe-ui/frappe'
-import { Button, Tooltip, createResource, toast } from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
+import { Button, Tooltip, toast } from 'frappe-ui'
 import { useElementVisibility } from '@vueuse/core'
 import {
   ref,
@@ -506,42 +505,32 @@ import {
   onBeforeUnmount,
 } from 'vue'
 import { useRoute } from 'vue-router'
-
+import { useQuery } from '@/composables/useQuery'
 const { $socket } = globalStore()
 const { getUser } = usersStore()
 const { capture } = useTelemetry()
-
 const props = defineProps({
   doctype: { type: String, default: 'CRM Lead' },
   docname: { type: String, default: '' },
   tabs: { type: Array, default: () => [] },
 })
-
 const emit = defineEmits(['beforeSave', 'afterSave'])
-
 const route = useRoute()
-
 const reload = defineModel('reload', { type: Boolean, default: false })
 const tabIndex = defineModel('tabIndex', { type: Number, default: 0 })
-
 const { document: _document } = useDocument(props.doctype, props.docname)
-
 const doc = computed(() => _document.doc || {})
-
 const reload_email = ref(false)
 const modalRef = ref(null)
 const showFilesUploader = ref(false)
-
 const title = computed(() => props.tabs?.[tabIndex.value]?.name || 'Activity')
-
 const changeTabTo = (tabName) => {
   const tabNames = props.tabs?.map((tab) => tab.name?.toLowerCase())
   const index = tabNames?.indexOf(tabName)
   if (index == -1) return
   tabIndex.value = index
 }
-
-const all_activities = createResource({
+const all_activities = useQuery({
   url: 'crm.api.activities.get_activities',
   params: { name: props.docname },
   cache: ['activity', props.docname],
@@ -551,10 +540,8 @@ const all_activities = createResource({
   },
   onSuccess: () => nextTick(() => scroll()),
 })
-
 const showWhatsappTemplates = ref(false)
-
-const whatsappMessages = createResource({
+const whatsappMessages = useQuery({
   url: 'crm.api.whatsapp.get_whatsapp_messages',
   cache: ['whatsapp_messages', props.docname],
   params: {
@@ -565,7 +552,6 @@ const whatsappMessages = createResource({
   transform: (data) => sortByCreation(data),
   onSuccess: () => nextTick(() => scroll()),
 })
-
 watch(
   whatsappEnabled,
   (enabled) => {
@@ -573,11 +559,9 @@ watch(
   },
   { immediate: true },
 )
-
 onBeforeUnmount(() => {
   $socket.off('whatsapp_message')
 })
-
 onMounted(() => {
   $socket.on('whatsapp_message', (data) => {
     if (
@@ -587,7 +571,6 @@ onMounted(() => {
       whatsappMessages.reload()
     }
   })
-
   nextTick(() => {
     const hash = route.hash.slice(1) || null
     let tabNames = props.tabs?.map((tab) => tab.name)
@@ -596,11 +579,10 @@ onMounted(() => {
     }
   })
 })
-
 function sendTemplate(template) {
   showWhatsappTemplates.value = false
   capture('send_whatsapp_template', { doctype: props.doctype })
-  createResource({
+  useQuery({
     url: 'crm.api.whatsapp.send_whatsapp_template',
     params: {
       reference_doctype: props.doctype,
@@ -615,16 +597,13 @@ function sendTemplate(template) {
     onSuccess: () => whatsappMessages.reload(),
   })
 }
-
 const replyMessage = ref({})
-
 function get_activities() {
   if (!all_activities.data?.versions) return []
   if (!all_activities.data?.calls.length)
     return all_activities.data.versions || []
   return [...all_activities.data.versions, ...all_activities.data.calls]
 }
-
 const activities = computed(() => {
   let _activities = []
   if (title.value == 'Activity') {
@@ -652,19 +631,15 @@ const activities = computed(() => {
     if (!all_activities.data?.attachments) return []
     return sortByModified(all_activities.data.attachments)
   }
-
   _activities.forEach((activity) => {
     activity.icon = timelineIcon(activity.activity_type, activity.is_lead)
-
     if (
       activity.activity_type == 'incoming_call' ||
       activity.activity_type == 'outgoing_call' ||
       activity.activity_type == 'communication'
     )
       return
-
     update_activities_details(activity)
-
     if (activity.other_versions) {
       activity.show_others = false
       activity.other_versions.forEach((other_version) => {
@@ -674,20 +649,17 @@ const activities = computed(() => {
   })
   return sortByCreation(_activities)
 })
-
 function sortByCreation(list) {
   return list.sort((a, b) => new Date(a.creation) - new Date(b.creation))
 }
 function sortByModified(list) {
   return list.sort((b, a) => new Date(a.modified) - new Date(b.modified))
 }
-
 function update_activities_details(activity) {
   activity.owner_name = getUser(activity.owner).full_name
   activity.type = ''
   activity.value = ''
   activity.to = ''
-
   if (activity.activity_type == 'creation') {
     activity.type = activity.data
   } else if (activity.activity_type == 'added') {
@@ -702,14 +674,12 @@ function update_activities_details(activity) {
     activity.to = 'to'
   }
 }
-
 const top = computed(() => {
   if (['Activity', 'Emails', 'Comments'].includes(title.value)) {
     return '32.3%'
   }
   return '30%'
 })
-
 const emptyText = computed(() => {
   let text = 'No Activities Found'
   if (title.value == 'Emails') {
@@ -731,7 +701,6 @@ const emptyText = computed(() => {
   }
   return text
 })
-
 const emptyTextDescription = computed(() => {
   let description =
     'There are no activities to display here. Go ahead and make some changes.'
@@ -757,7 +726,6 @@ const emptyTextDescription = computed(() => {
   }
   return description
 })
-
 const emptyTextIcon = computed(() => {
   let icon = ActivityIcon
   if (title.value == 'Emails') {
@@ -779,7 +747,6 @@ const emptyTextIcon = computed(() => {
   }
   return h(icon, { class: 'text-ink-gray-4' })
 })
-
 function timelineIcon(activity_type, is_lead) {
   let icon
   switch (activity_type) {
@@ -807,13 +774,10 @@ function timelineIcon(activity_type, is_lead) {
     default:
       icon = DotIcon
   }
-
   return markRaw(icon)
 }
-
 const emailBox = ref(null)
 const whatsappBox = ref(null)
-
 watch([reload, reload_email], ([reload_value, reload_email_value]) => {
   if (reload_value || reload_email_value) {
     all_activities.reload()
@@ -822,7 +786,6 @@ watch([reload, reload_email], ([reload_value, reload_email_value]) => {
     reload_email.value = false
   }
 })
-
 function scroll(hash) {
   if (['tasks', 'notes', 'events'].includes(route.hash?.slice(1))) return
   setTimeout(() => {
@@ -839,6 +802,5 @@ function scroll(hash) {
     }
   }, 500)
 }
-
 defineExpose({ emailBox, all_activities, changeTabTo })
 </script>

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex h-full flex-col gap-6 p-8 text-ink-gray-8">
     <!-- Header -->
     <div class="flex justify-between">
@@ -27,7 +27,6 @@
         />
       </div>
     </div>
-
     <!-- Fields -->
     <div class="flex flex-1 flex-col gap-4 overflow-y-auto">
       <div class="flex sm:flex-row flex-col gap-4">
@@ -123,25 +122,17 @@
   </div>
 </template>
 <script setup>
-import {
-  TextEditor,
-  FormControl,
-  Switch,
-  toast,
-  createResource,
-} from 'frappe-ui'
+import { FormControl, Switch, toast } from 'frappe-ui'
+import TextEditor from '@/components/TextEditor.vue'
 import { computed, inject, onMounted, ref } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   templateData: { type: Object, required: true },
 })
-
 const emit = defineEmits(['updateStep'])
 const errorMessage = ref('')
-
 const templates = inject('templates')
 const template = ref({})
-
 const updateTemplate = async () => {
   errorMessage.value = ''
   if (!template.value.name) {
@@ -160,9 +151,7 @@ const updateTemplate = async () => {
     errorMessage.value = __('Content is required')
     return
   }
-
   template.value.use_html = template.value.content_type === 'HTML'
-
   const old = {
     ...props.templateData,
     use_html: Boolean(props.templateData.use_html),
@@ -171,21 +160,15 @@ const updateTemplate = async () => {
     ...template.value,
     use_html: Boolean(template.value.use_html),
   }
-
   delete newEmailTemplate.content_type
-
   const nameChanged = old.name !== newEmailTemplate.name
   delete old.name
   delete newEmailTemplate.name
-
   const otherFieldChanged =
     JSON.stringify(old) !== JSON.stringify(newEmailTemplate)
   const values = newEmailTemplate
-
   if (!nameChanged && !otherFieldChanged) return
-
   let name = props.templateData.name
-
   if (nameChanged) {
     name = await renameDoc.fetch()
     if (!otherFieldChanged) {
@@ -208,7 +191,6 @@ const updateTemplate = async () => {
     )
   }
 }
-
 const dirty = computed(() => {
   return (
     template.value.name !== props.templateData.name ||
@@ -220,8 +202,7 @@ const dirty = computed(() => {
     Boolean(template.value.enabled) !== Boolean(props.templateData.enabled)
   )
 })
-
-const renameDoc = createResource({
+const renameDoc = useQuery({
   url: 'frappe.client.rename_doc',
   method: 'POST',
   makeParams() {
@@ -239,7 +220,6 @@ const renameDoc = createResource({
     errorMessage.value = error.messages[0] || __('Failed to rename template')
   },
 })
-
 onMounted(() => {
   template.value = { ...props.templateData }
   template.value.content_type = template.value.use_html ? 'HTML' : 'Rich Text'

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <LayoutHeader>
     <template #left-header>
       <Breadcrumbs :items="breadcrumbs">
@@ -26,7 +26,7 @@
           <Button
             v-if="doc.status"
             :label="statusLabel(doc.status)"
-            :iconRight="open ? 'chevron-up' : 'chevron-down'"
+            :iconRight="open ? 'lucide-chevron-up' : 'lucide-chevron-down'"
           >
             <template #prefix>
               <IndicatorIcon :class="getDealStatus(doc.status).color" />
@@ -382,18 +382,9 @@ import { useDocument } from '@/data/document'
 import { whatsappEnabled } from '@/composables/whatsapp'
 import { callEnabled } from '@/composables/telephony'
 import { useBroadcast } from '@/composables/useBroadcast'
-import {
-  createResource,
-  Dropdown,
-  Tooltip,
-  Avatar,
-  Tabs,
-  Breadcrumbs,
-  call,
-  usePageMeta,
-  toast,
-} from 'frappe-ui'
-import { useOnboarding } from 'frappe-ui/frappe'
+import { Dropdown, Tooltip, Avatar, Tabs, Breadcrumbs, usePageMeta, toast } from 'frappe-ui'
+import { call } from '@/api/call'
+import { useOnboarding } from '@/composables/useOnboarding'
 import {
   ref,
   computed,
@@ -405,6 +396,7 @@ import {
 } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useActiveTabManager } from '@/composables/useActiveTabManager'
+import { useQuery } from '@/composables/useQuery'
 
 const { on } = useBroadcast()
 const { brand } = getSettings()
@@ -613,7 +605,7 @@ const tabs = computed(() => {
 
 const { tabIndex } = useActiveTabManager(tabs, 'lastDealTab')
 
-const sections = createResource({
+const sections = useQuery({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_sidepanel_sections',
   params: { doctype: 'CRM Deal' },
   transform: (data) => getParsedSections(data),
@@ -705,7 +697,7 @@ async function setPrimaryContact(contact) {
   }
 }
 
-const dealContacts = createResource({
+const dealContacts = useQuery({
   url: 'crm.fcrm.doctype.crm_deal.api.get_deal_contacts',
   params: { name: props.dealId },
   cache: ['deal_contacts', props.dealId],

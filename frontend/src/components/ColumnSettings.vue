@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Popover placement="bottom-end">
     <template #target="{ togglePopover }">
       <Button :label="__('Columns')" @click="togglePopover">
@@ -66,7 +66,7 @@
                   class="w-full !justify-start !text-ink-gray-5"
                   variant="ghost"
                   :label="__('Add Column')"
-                  iconLeft="plus"
+                  iconLeft="lucide-plus"
                   @click="togglePopover"
                 />
               </template>
@@ -198,7 +198,7 @@ const rows = computed({
 const { getFields } = getMeta(props.doctype)
 
 const fields = computed(() => {
-  const _fields = getFields({ withStandardFields: true }) || []
+  const _fields = getFields({ withStandardFields: true }).filter((f) => !f.hidden)
   if (!_fields.length) return []
 
   let existingFields = []

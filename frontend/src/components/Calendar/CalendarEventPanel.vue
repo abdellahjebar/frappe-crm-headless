@@ -1,4 +1,4 @@
-<!-- eslint-disable vue/no-v-html -->
+﻿<!-- eslint-disable vue/no-v-html -->
 <template>
   <div v-if="show" class="flex flex-col w-[352px] text-base h-full">
     <!-- Event Header -->
@@ -230,7 +230,7 @@
             v-if="!showAllParticipants && peoples.length > 2"
             variant="ghost"
             :label="__('See All Participants')"
-            iconLeft="more-horizontal"
+            iconLeft="lucide-more-horizontal"
             class="!justify-start w-fit"
             @click="showAllParticipants = true"
           />
@@ -238,7 +238,7 @@
             v-else-if="showAllParticipants"
             variant="ghost"
             :label="__('Show Less')"
-            iconLeft="chevron-up"
+            iconLeft="lucide-chevron-up"
             class="!justify-start w-fit"
             @click="showAllParticipants = false"
           />
@@ -383,6 +383,7 @@
         <DescriptionIcon class="size-4 mt-1.5" />
         <div class="flex w-full items-center gap-x-2 border rounded py-1">
           <TextEditor
+            :key="_event.name || 'new-event'"
             editor-class="!prose-sm !leading-[1.13rem] overflow-auto px-2.5 rounded placeholder-ink-gray-4 focus:bg-surface-base focus:ring-0 text-ink-gray-8 transition-colors"
             :bubbleMenu="true"
             :content="_event.description"
@@ -576,7 +577,6 @@ import {
   Switch,
   DatePicker,
   TimePicker,
-  TextEditor,
   ErrorMessage,
   Dropdown,
   dayjs,
@@ -585,8 +585,9 @@ import {
   createDocumentResource,
   TabButtons,
   toast,
-  call,
 } from 'frappe-ui'
+import { call } from '@/api/call'
+import TextEditor from '@/components/TextEditor.vue'
 import { ref, computed, watch, h, inject } from 'vue'
 import { useRouter } from 'vue-router'
 

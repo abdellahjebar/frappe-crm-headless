@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <LayoutHeader v-if="contact.doc">
     <template #left-header>
       <Breadcrumbs :items="breadcrumbs">
@@ -99,7 +99,7 @@
                   :label="__('Delete')"
                   theme="red"
                   size="sm"
-                  iconLeft="trash-2"
+                  iconLeft="lucide-trash-2"
                   @click="deleteContact()"
                 />
               </div>
@@ -168,7 +168,6 @@
     name="Contacts"
   />
 </template>
-
 <script setup>
 import ErrorPage from '@/components/ErrorPage.vue'
 import Resizer from '@/components/Resizer.vue'
@@ -195,58 +194,40 @@ import { usersStore } from '@/stores/users.js'
 import { organizationsStore } from '@/stores/organizations.js'
 import { statusesStore } from '@/stores/statuses'
 import { callEnabled } from '@/composables/telephony'
-import {
-  Breadcrumbs,
-  Avatar,
-  FileUploader,
-  Tabs,
-  call,
-  createResource,
-  usePageMeta,
-  Dropdown,
-  toast,
-} from 'frappe-ui'
+import { Breadcrumbs, Avatar, FileUploader, Tabs, usePageMeta, Dropdown, toast } from 'frappe-ui'
+import { call } from '@/api/call'
 import { useDoctypeModal } from '@/composables/doctypeModal'
-import { useTelemetry } from 'frappe-ui/frappe'
+import { useTelemetry } from '@/composables/useTelemetry'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import EmptyState from '@/components/ListViews/EmptyState.vue'
-
+import { useQuery } from '@/composables/useQuery'
 const { brand } = getSettings()
 const { makeCall, $dialog, $socket } = globalStore()
-
 const { getUser } = usersStore()
 const { getOrganization } = organizationsStore()
 const { getDealStatus } = statusesStore()
 const { doctypeMeta } = getMeta('Contact')
 const { capture } = useTelemetry()
-
 const props = defineProps({
   contactId: { type: String, required: true },
 })
-
 const route = useRoute()
 const router = useRouter()
-
 const errorTitle = ref('')
 const errorMessage = ref('')
-
 const {
   document: contact,
   permissions,
   scripts,
   triggerOnRender,
 } = useDocument('Contact', props.contactId)
-
 const canDelete = computed(() => permissions.data?.permissions?.delete || false)
-
 onMounted(async () => {
   if (contact.doc) await triggerOnRender()
 })
-
 const breadcrumbs = computed(() => {
   let items = [{ label: __('Contacts'), route: { name: 'Contacts' } }]
-
   if (route.query.view || route.query.viewType) {
     let view = getView(route.query.view, route.query.viewType, 'Contact')
     if (view) {
@@ -261,19 +242,16 @@ const breadcrumbs = computed(() => {
       })
     }
   }
-
   items.push({
     label: title.value,
     route: { name: 'Contact', params: { contactId: props.contactId } },
   })
   return items
 })
-
 const title = computed(() => {
   let t = doctypeMeta.value?.title_field || 'name'
   return contact.doc?.[t] || props.contactId
 })
-
 usePageMeta(() => {
   return {
     title: title.value,
@@ -281,11 +259,9 @@ usePageMeta(() => {
   }
 })
 const showDeleteLinkedDocModal = ref(false)
-
 async function deleteContact() {
   showDeleteLinkedDocModal.value = true
 }
-
 function changeContactImage(file) {
   contact.doc.image = file?.file_url || ''
   contact.save.submit(null, {
@@ -294,7 +270,6 @@ function changeContactImage(file) {
     },
   })
 }
-
 const tabIndex = ref(0)
 const tabs = [
   {
@@ -303,27 +278,22 @@ const tabs = [
     count: computed(() => deals.data?.length),
   },
 ]
-
-const deals = createResource({
+const deals = useQuery({
   url: 'crm.api.contact.get_linked_deals',
   cache: ['deals', props.contactId],
   params: { contact: props.contactId },
   auto: true,
 })
-
 const rows = computed(() => {
   if (!deals.data || deals.data == []) return []
-
   return deals.data.map((row) => getDealRowObject(row))
 })
-
-const sections = createResource({
+const sections = useQuery({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_sidepanel_sections',
   cache: ['sidePanelSections', 'Contact'],
   params: { doctype: 'Contact' },
   auto: true,
 })
-
 const parsedSections = computed(() => {
   if (!sections.data) return []
   return sections.data.map((section) => ({
@@ -334,7 +304,6 @@ const parsedSections = computed(() => {
         field.label = fieldLabelMap[field.fieldname] || field.label
         field.placeholder =
           fieldPlaceholderMap[field.fieldname] || field.placeholder
-
         if (field.fieldname === 'email_id') {
           return {
             ...field,
@@ -430,17 +399,14 @@ const parsedSections = computed(() => {
     })),
   }))
 })
-
 const fieldLabelMap = {
   mobile_no: __('Mobile Number'),
   company_name: __('Organization'),
 }
-
 const fieldPlaceholderMap = {
   mobile_no: __('Add Mobile Number...'),
   company_name: __('Add Organization...'),
 }
-
 async function setAsPrimary(field, value) {
   let d = await call('crm.api.contact.set_as_primary', {
     contact: contact.doc.name,
@@ -452,7 +418,6 @@ async function setAsPrimary(field, value) {
     toast.success(__('Contact Updated'))
   }
 }
-
 async function createNew(field, value) {
   if (!value) return
   let d = await call('crm.api.contact.create_new', {
@@ -465,7 +430,6 @@ async function createNew(field, value) {
     toast.success(__('Contact Updated'))
   }
 }
-
 async function editOption(doctype, name, fieldname, value) {
   let d = await call('frappe.client.set_value', {
     doctype,
@@ -478,7 +442,6 @@ async function editOption(doctype, name, fieldname, value) {
     toast.success(__('Contact Updated'))
   }
 }
-
 async function deleteOption(doctype, name) {
   await call('frappe.client.delete', {
     doctype,
@@ -487,11 +450,8 @@ async function deleteOption(doctype, name) {
   await contact.reload()
   toast.success(__('Contact Updated'))
 }
-
 const { getFormattedCurrency } = getMeta('CRM Deal')
-
 const columns = computed(() => dealColumns)
-
 function getDealRowObject(deal) {
   return {
     name: deal.name,
@@ -516,7 +476,6 @@ function getDealRowObject(deal) {
     },
   }
 }
-
 const dealColumns = [
   {
     label: __('Organization'),
@@ -555,9 +514,7 @@ const dealColumns = [
     width: '8rem',
   },
 ]
-
 const { showModal } = useDoctypeModal()
-
 function showAddressModal(_address) {
   showModal({
     name: _address || null,
@@ -571,7 +528,6 @@ function showAddressModal(_address) {
     },
   })
 }
-
 // Setup custom actions from Form Scripts
 watch(
   () => contact.doc,

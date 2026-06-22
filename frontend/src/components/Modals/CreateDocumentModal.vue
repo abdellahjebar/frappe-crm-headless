@@ -45,7 +45,6 @@
     </template>
   </Dialog>
 </template>
-
 <script setup>
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
 import EditIcon from '@/components/Icons/EditIcon.vue'
@@ -54,33 +53,26 @@ import { getMeta } from '@/stores/meta'
 import { useDocument } from '@/data/document'
 import { isMobileView } from '@/composables/settings'
 import { showQuickEntryModal, quickEntryProps } from '@/composables/modals'
-import { createResource, ErrorMessage, call } from 'frappe-ui'
+import { ErrorMessage } from 'frappe-ui'
+import { call } from '@/api/call'
 import { ref, nextTick, watch, computed } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   doctype: { type: String, required: true },
   data: { type: Object, default: () => ({}) },
 })
-
 const emit = defineEmits(['callback'])
-
 const { isManager } = usersStore()
-
 const show = defineModel({ type: Boolean })
-
 const loading = ref(false)
 const error = ref(null)
-
 const { document: _data, triggerOnBeforeCreate } = useDocument(props.doctype)
 const { doctypeMeta } = getMeta(props.doctype)
-
 const dialogOptions = computed(() => {
   let doctype = props.doctype
-
   if (doctype.startsWith('CRM ') || doctype.startsWith('FCRM ')) {
     doctype = doctype.replace(/^(CRM |FCRM )/, '')
   }
-
   let title = __('New {0}', [doctype])
   let size = 'xl'
   let actions = [
@@ -90,22 +82,18 @@ const dialogOptions = computed(() => {
       onClick: () => create(),
     },
   ]
-
   return { title, size, actions }
 })
-
-const tabs = createResource({
+const tabs = useQuery({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_fields_layout',
   cache: ['QuickEntry', props.doctype],
   params: { doctype: props.doctype, type: 'Quick Entry' },
   auto: true,
 })
-
 watch(
   [tabs, doctypeMeta],
   () => {
     if (!tabs.data || !doctypeMeta.value) return
-
     if (doctypeMeta.value?.autoname?.toLowerCase() === 'prompt') {
       let hasNewNameField = tabs.data.some((tab) =>
         tab.sections.some((section) =>
@@ -114,7 +102,6 @@ watch(
           ),
         ),
       )
-
       if (!hasNewNameField) {
         tabs.data[0].sections[0].columns[0].fields.unshift({
           fieldname: '__newname',
@@ -127,13 +114,10 @@ watch(
   },
   { immediate: true, deep: true },
 )
-
 async function create() {
   loading.value = true
   error.value = null
-
   await triggerOnBeforeCreate?.()
-
   let doc = await call(
     'frappe.client.insert',
     {
@@ -151,20 +135,16 @@ async function create() {
       },
     },
   )
-
   loading.value = false
   show.value = false
   emit('callback', doc)
   _data.doc = {}
 }
-
 watch(
   doctypeMeta,
   (meta) => {
     if (!meta) return
-
     let doc = {}
-
     if (typeof props.data === 'object') {
       Object.assign(doc, props.data)
     } else if (meta.autoname && meta.autoname.indexOf('field:') !== -1) {
@@ -174,12 +154,10 @@ watch(
     } else if (meta.title_field) {
       doc[meta.title_field] = props.data
     }
-
     nextTick(() => Object.assign(_data.doc, doc))
   },
   { immediate: true, deep: true },
 )
-
 function openQuickEntryModal() {
   showQuickEntryModal.value = true
   quickEntryProps.value = { doctype: props.doctype }

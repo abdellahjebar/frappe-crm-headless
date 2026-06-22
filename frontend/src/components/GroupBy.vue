@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Autocomplete :options="options" value="" @change="(e) => setGroupBy(e)">
     <template #target="{ togglePopover, isOpen }">
       <Button
@@ -8,7 +8,7 @@
             : __('Group By: ') + groupByValue?.label
         "
         :iconLeft="DetailsIcon"
-        :iconRight="isOpen ? 'chevron-up' : 'chevron-down'"
+        :iconRight="isOpen ? 'lucide-chevron-up' : 'lucide-chevron-down'"
         @click="togglePopover()"
       />
     </template>
@@ -17,8 +17,9 @@
 <script setup>
 import Autocomplete from '@/components/frappe-ui/Autocomplete.vue'
 import DetailsIcon from '@/components/Icons/DetailsIcon.vue'
-import { createResource } from 'frappe-ui'
+
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { useQuery } from '@/composables/useQuery'
 
 const props = defineProps({
   doctype: { type: String, required: true },
@@ -34,7 +35,7 @@ const groupByValue = ref({
   fieldname: '',
 })
 
-const groupByOptions = createResource({
+const groupByOptions = useQuery({
   url: 'crm.api.doc.get_group_by_fields',
   cache: ['groupByOptions', props.doctype],
   params: { doctype: props.doctype },

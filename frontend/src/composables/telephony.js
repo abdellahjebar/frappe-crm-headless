@@ -1,11 +1,10 @@
-import { createResource } from 'frappe-ui'
-import { computed, ref } from 'vue'
 
+import { computed, ref } from 'vue'
+import { useQuery } from '@/composables/useQuery'
 const integrations = ref({})
 export const defaultCallingMedium = ref('')
 export const callEnabled = ref(false)
-
-createResource({
+useQuery({
   url: 'crm.integrations.api.is_call_integration_enabled',
   cache: 'Is Call Integration Enabled',
   auto: true,
@@ -15,12 +14,10 @@ createResource({
     callEnabled.value = Object.values(integrations.value).some(Boolean)
   },
 })
-
 export function setEnabled(name, value) {
   integrations.value[name] = value
   callEnabled.value = Object.values(integrations.value).some(Boolean)
 }
-
 export function useTelephony() {
   const allIntegrations = computed(() =>
     Object.entries(integrations.value).map(([name, enabled]) => ({
@@ -28,14 +25,11 @@ export function useTelephony() {
       enabled,
     })),
   )
-
   function isEnabled(name) {
     return Boolean(integrations.value[name])
   }
-
   const isAnyEnabled = computed(() =>
     Object.values(integrations.value).some(Boolean),
   )
-
   return { integrations: allIntegrations, isEnabled, isAnyEnabled }
 }

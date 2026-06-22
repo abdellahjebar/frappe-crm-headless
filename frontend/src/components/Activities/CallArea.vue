@@ -107,16 +107,14 @@ import AudioPlayer from '@/components/Activities/AudioPlayer.vue'
 import CallLogDetailModal from '@/components/Modals/CallLogDetailModal.vue'
 import { statusLabelMap, statusColorMap } from '@/utils/callLog.js'
 import { formatDate, timeAgo } from '@/utils'
-import { Avatar, Badge, Tooltip, createResource } from 'frappe-ui'
+import { Avatar, Badge, Tooltip } from 'frappe-ui'
 import { reactive, ref } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   activity: { type: Object, default: () => ({}) },
 })
-
 const call = reactive(props.activity)
-
-const callLog = createResource({
+const callLog = useQuery({
   url: 'crm.fcrm.doctype.crm_call_log.crm_call_log.get_call_log',
   params: { name: call.name },
   cache: ['call_log', call.name],

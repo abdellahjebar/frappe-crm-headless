@@ -1,5 +1,4 @@
 import { io } from 'socket.io-client'
-import { getCachedListResource, getCachedResource } from 'frappe-ui'
 import { config } from './config'
 
 /**
@@ -24,23 +23,23 @@ function resolveSocketUrl() {
   return null
 }
 
+const NOOP_SOCKET = { on() {}, off() {}, emit() {} }
+
 export function initSocket() {
+  // No real-time features in mock mode — return a no-op so socket.on/off calls
+  // in Notifications.vue don't crash when $socket is assigned.
+  if (import.meta.env.VITE_MOCK === 'true') return NOOP_SOCKET
+
   const url = resolveSocketUrl()
-  if (!url) return null   // socket is optional — app works without it
+  if (!url) return NOOP_SOCKET
 
   const socket = io(url, {
     withCredentials: true,
     reconnectionAttempts: 5,
   })
 
-  socket.on('refetch_resource', (data) => {
-    if (data.cache_key) {
-      const resource =
-        getCachedResource(data.cache_key) ||
-        getCachedListResource(data.cache_key)
-      if (resource) resource.reload()
-    }
-  })
+  // Phase D: wire adapter.realtime?.handleEvent(eventName, data) here so adapters
+  // can subscribe to backend-specific socket events without importing frappe-ui.
 
   return socket
 }

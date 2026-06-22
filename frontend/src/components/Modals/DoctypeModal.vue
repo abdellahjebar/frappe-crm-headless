@@ -1,6 +1,6 @@
 <template>
-  <Dialog v-model:open="show" :size="'xl'">
-    <template #body>
+  <Dialog v-model:open="show" :size="'xl'" bare>
+    <template #default>
       <div class="bg-surface-elevation-2 px-4 pb-6 pt-5 sm:px-6">
         <div class="mb-5 flex items-center justify-between">
           <div class="flex gap-2 items-center">
@@ -58,7 +58,6 @@
     </template>
   </Dialog>
 </template>
-
 <script setup>
 import EditIcon from '@/components/Icons/EditIcon.vue'
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
@@ -69,42 +68,34 @@ import { usersStore } from '@/stores/users'
 import { showQuickEntryModal, quickEntryProps } from '@/composables/modals'
 import { isMobileView } from '@/composables/settings'
 import { setupCustomizations } from '@/utils'
-import { call, createResource, toast } from 'frappe-ui'
+import { toast } from 'frappe-ui'
+import { call } from '@/api/call'
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   doctypeTitle: { type: String, default: '' },
   doctype: { type: String, default: '' },
   docname: { type: String, default: '' },
   defaults: { type: Object, default: () => ({}) },
 })
-
 const show = defineModel({ type: Boolean })
-
 const emit = defineEmits(['afterInsert', 'afterUpdate'])
-
 const router = useRouter()
-
 const { isManager } = usersStore()
 const { $dialog, $socket } = globalStore()
-
 const { document, scripts, triggerOnRender, triggerOnBeforeCreate } =
   useDocument(props.doctype, props.docname || null)
-
 const doc = computed(() => document.doc || {})
-
-const layout = createResource({
+const layout = useQuery({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_fields_layout',
   cache: ['Quick Entry', props.doctype],
   params: { doctype: props.doctype, type: 'Quick Entry' },
   auto: true,
 })
-
 const error = ref(null)
 const editMode = computed(() => Boolean(document.doc?.name))
-
-const _create = createResource({
+const _create = useQuery({
   url: 'frappe.client.insert',
   onSuccess: (d) => {
     document.doc = {}
@@ -125,10 +116,8 @@ const _create = createResource({
     error.value = err.messages?.[0] || 'Could not create document'
   },
 })
-
 async function create() {
   await triggerOnBeforeCreate?.()
-
   _create.submit({
     doc: {
       doctype: props.doctype,
@@ -136,7 +125,6 @@ async function create() {
     },
   })
 }
-
 function update() {
   document.save.submit(null, {
     onSuccess: (d) => {
@@ -148,13 +136,11 @@ function update() {
     },
   })
 }
-
 function openQuickEntryModal() {
   showQuickEntryModal.value = true
   quickEntryProps.value = { doctype: props.doctype }
   nextTick(() => (show.value = false))
 }
-
 watch(
   () => document.doc,
   async (_doc) => {
@@ -171,7 +157,6 @@ watch(
   },
   { once: true },
 )
-
 onMounted(async () => {
   document.doc = {
     ...document.doc,

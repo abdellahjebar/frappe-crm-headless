@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <span>
     <a :href="isShowable ? null : url" target="_blank">
       <Button

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <LayoutHeader v-if="contact.doc">
     <header
       class="relative flex h-10.5 items-center justify-between gap-2 py-2.5 pl-2"
@@ -157,7 +157,6 @@
     </Tabs>
   </div>
 </template>
-
 <script setup>
 import Icon from '@/components/Icon.vue'
 import SidePanelLayout from '@/components/SidePanelLayout.vue'
@@ -177,53 +176,36 @@ import { usersStore } from '@/stores/users.js'
 import { organizationsStore } from '@/stores/organizations.js'
 import { statusesStore } from '@/stores/statuses'
 import { callEnabled } from '@/composables/telephony'
-import {
-  Breadcrumbs,
-  Avatar,
-  FileUploader,
-  Tabs,
-  call,
-  createResource,
-  usePageMeta,
-  Dropdown,
-  toast,
-} from 'frappe-ui'
+import { Breadcrumbs, Avatar, FileUploader, Tabs, usePageMeta, Dropdown, toast } from 'frappe-ui'
+import { call } from '@/api/call'
 import { useDoctypeModal } from '@/composables/doctypeModal'
-import { useTelemetry } from 'frappe-ui/frappe'
+import { useTelemetry } from '@/composables/useTelemetry'
 import { ref, computed, h, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-
+import { useQuery } from '@/composables/useQuery'
 const { brand } = getSettings()
 const { $dialog, makeCall } = globalStore()
-
 const { getUser } = usersStore()
 const { getOrganization } = organizationsStore()
 const { getDealStatus } = statusesStore()
 const { doctypeMeta } = getMeta('Contact')
 const { capture } = useTelemetry()
-
 const props = defineProps({
   contactId: { type: String, required: true },
 })
-
 const route = useRoute()
 const router = useRouter()
-
 const {
   document: contact,
   permissions,
   triggerOnRender,
 } = useDocument('Contact', props.contactId)
-
 const canDelete = computed(() => permissions.data?.permissions?.delete || false)
-
 onMounted(async () => {
   if (contact.doc) await triggerOnRender()
 })
-
 const breadcrumbs = computed(() => {
   let items = [{ label: __('Contacts'), route: { name: 'Contacts' } }]
-
   if (route.query.view || route.query.viewType) {
     let view = getView(route.query.view, route.query.viewType, 'Contact')
     if (view) {
@@ -238,26 +220,22 @@ const breadcrumbs = computed(() => {
       })
     }
   }
-
   items.push({
     label: title.value,
     route: { name: 'Contact', params: { contactId: props.contactId } },
   })
   return items
 })
-
 const title = computed(() => {
   let t = doctypeMeta.value?.title_field || 'name'
   return contact.doc?.[t] || props.contactId
 })
-
 usePageMeta(() => {
   return {
     title: title.value,
     icon: brand.favicon,
   }
 })
-
 function changeContactImage(file) {
   contact.doc.image = file?.file_url || ''
   contact.save.submit(null, {
@@ -266,7 +244,6 @@ function changeContactImage(file) {
     },
   })
 }
-
 async function deleteContact() {
   $dialog({
     title: __('Delete Contact'),
@@ -288,7 +265,6 @@ async function deleteContact() {
     ],
   })
 }
-
 const tabIndex = ref(0)
 const tabs = [
   {
@@ -303,28 +279,23 @@ const tabs = [
     count: computed(() => deals.data?.length),
   },
 ]
-
-const deals = createResource({
+const deals = useQuery({
   url: 'crm.api.contact.get_linked_deals',
   cache: ['deals', props.contactId],
   params: { contact: props.contactId },
   auto: true,
 })
-
 const rows = computed(() => {
   if (!deals.data || deals.data == []) return []
-
   return deals.data.map((row) => getDealRowObject(row))
 })
-
-const sections = createResource({
+const sections = useQuery({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_sidepanel_sections',
   cache: ['sidePanelSections', 'Contact'],
   params: { doctype: 'Contact' },
   auto: true,
   transform: (data) => computed(() => getParsedSections(data)),
 })
-
 function getParsedSections(_sections) {
   return _sections.map((section) => {
     section.columns = section.columns.map((column) => {
@@ -433,7 +404,6 @@ function getParsedSections(_sections) {
     return section
   })
 }
-
 async function setAsPrimary(field, value) {
   let d = await call('crm.api.contact.set_as_primary', {
     contact: contact.doc.name,
@@ -445,7 +415,6 @@ async function setAsPrimary(field, value) {
     toast.success(__('Contact Updated'))
   }
 }
-
 async function createNew(field, value) {
   if (!value) return
   let d = await call('crm.api.contact.create_new', {
@@ -458,7 +427,6 @@ async function createNew(field, value) {
     toast.success(__('Contact Updated'))
   }
 }
-
 async function editOption(doctype, name, fieldname, value) {
   let d = await call('frappe.client.set_value', {
     doctype,
@@ -471,7 +439,6 @@ async function editOption(doctype, name, fieldname, value) {
     toast.success(__('Contact Updated'))
   }
 }
-
 async function deleteOption(doctype, name) {
   await call('frappe.client.delete', {
     doctype,
@@ -480,11 +447,8 @@ async function deleteOption(doctype, name) {
   await contact.reload()
   toast.success(__('Contact Updated'))
 }
-
 const { getFormattedCurrency } = getMeta('CRM Deal')
-
 const columns = computed(() => dealColumns)
-
 function getDealRowObject(deal) {
   return {
     name: deal.name,
@@ -509,7 +473,6 @@ function getDealRowObject(deal) {
     },
   }
 }
-
 const dealColumns = [
   {
     label: __('Organization'),
@@ -548,9 +511,7 @@ const dealColumns = [
     width: '8rem',
   },
 ]
-
 const { showModal } = useDoctypeModal()
-
 function showAddressModal(_address) {
   showModal({
     name: _address || null,

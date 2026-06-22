@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div
     class="grid h-full place-items-center px-4 py-20 text-center text-lg text-ink-gray-5"
   >

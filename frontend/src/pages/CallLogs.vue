@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <LayoutHeader>
     <template #left-header>
       <ViewBreadcrumbs v-model="viewControls" routeName="Call Logs" />
@@ -11,7 +11,7 @@
       <Button
         variant="solid"
         :label="__('Create')"
-        iconLeft="plus"
+        iconLeft="lucide-plus"
         @click="createCallLog"
       />
     </template>
@@ -58,7 +58,6 @@
     v-model:callLog="callLog"
   />
 </template>
-
 <script setup>
 import ViewBreadcrumbs from '@/components/ViewBreadcrumbs.vue'
 import CustomActions from '@/components/CustomActions.vue'
@@ -70,19 +69,16 @@ import EmptyState from '@/components/ListViews/EmptyState.vue'
 import CallLogDetailModal from '@/components/Modals/CallLogDetailModal.vue'
 import { useDoctypeModal } from '@/composables/doctypeModal'
 import { getCallLogDetail } from '@/utils/callLog'
-import { useTelemetry } from 'frappe-ui/frappe'
-import { createResource } from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
 import { computed, ref, onMounted } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const callLogsListView = ref(null)
-
 // callLogs data is loaded in the ViewControls component
 const callLogs = ref({})
 const loadMore = ref(1)
 const triggerResize = ref(1)
 const updatedPageCount = ref(20)
 const viewControls = ref(null)
-
 const rows = computed(() => {
   if (
     !callLogs.value?.data?.data ||
@@ -97,10 +93,8 @@ const rows = computed(() => {
     return _rows
   })
 })
-
 const columns = computed(() => {
   let _columns = callLogs.value?.data?.columns || []
-
   // Set align right for last column
   if (_columns.length) {
     _columns = _columns.map((col, index) => {
@@ -110,26 +104,21 @@ const columns = computed(() => {
       return col
     })
   }
-
   return _columns
 })
-
 const showCallLogDetailModal = ref(false)
 const callLog = ref({})
-
 function showCallLog(name) {
   showCallLogDetailModal.value = true
-  callLog.value = createResource({
+  callLog.value = useQuery({
     url: 'crm.fcrm.doctype.crm_call_log.crm_call_log.get_call_log',
     params: { name },
     cache: ['call_log', name],
     auto: true,
   })
 }
-
 const { showModal } = useDoctypeModal()
 const { capture } = useTelemetry()
-
 function createCallLog() {
   showModal({
     doctype: 'CRM Call Log',
@@ -142,18 +131,15 @@ function createCallLog() {
     },
   })
 }
-
 const openCallLogFromURL = () => {
   const searchParams = new URLSearchParams(window.location.search)
   const callLogName = searchParams.get('open')
-
   if (callLogName) {
     showCallLog(callLogName)
     searchParams.delete('open')
     window.history.replaceState(null, '', window.location.pathname)
   }
 }
-
 onMounted(() => {
   openCallLogFromURL()
 })

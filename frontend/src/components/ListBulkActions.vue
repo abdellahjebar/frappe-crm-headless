@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <EditValueModal
     v-if="showEditModal"
     v-model="showEditModal"
@@ -35,8 +35,9 @@ import EditValueModal from '@/components/Modals/EditValueModal.vue'
 import AssignmentModal from '@/components/Modals/AssignmentModal.vue'
 import { setupListCustomizations } from '@/utils'
 import { globalStore } from '@/stores/global'
-import { useTelemetry } from 'frappe-ui/frappe'
-import { call, toast } from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
+import { toast } from 'frappe-ui'
+import { call } from '@/api/call'
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 

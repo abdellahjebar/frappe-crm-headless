@@ -48,14 +48,13 @@
     </template>
   </Dialog>
 </template>
-
 <script setup>
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
 import { findMissingMandatory } from '@/utils/fieldTransforms'
 import { getMeta } from '@/stores/meta'
-import { Dialog, ErrorMessage, createResource } from 'frappe-ui'
+import { Dialog, ErrorMessage } from 'frappe-ui'
 import { ref, reactive, computed, watch } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   title: { type: String, default: 'Dialog' },
   doctype: { type: String, default: '' },
@@ -71,37 +70,29 @@ const props = defineProps({
   submitLabel: { type: String, default: 'Submit' },
   cancelLabel: { type: String, default: null },
 })
-
 const emit = defineEmits(['resolve'])
-
 const show = ref(true)
 const error = ref('')
 const loading = ref(false)
 let resolved = false
-
 function submit(result) {
   if (resolved) return
   resolved = true
   emit('resolve', result)
 }
-
 function cancel() {
   if (resolved) return
   resolved = true
   props.onCancel?.()
   emit('resolve', null)
 }
-
 const localDoc = reactive({ ...props.defaults })
-
 const fieldLayoutContext = reactive({
   fieldPropertyOverrides: {},
   fieldHtmlMap: {},
 })
-
 // ── Layout resolution ──
 // Priority: tabs > fields > doctype+fieldnames > doctype (Quick Entry)
-
 function wrapFieldsInTab(fields) {
   return [
     {
@@ -117,7 +108,6 @@ function wrapFieldsInTab(fields) {
     },
   ]
 }
-
 function applyRequiredFlags(tabs, requiredFieldnames) {
   if (!requiredFieldnames || requiredFieldnames.length === 0) return tabs
   const reqSet = new Set(requiredFieldnames)
@@ -134,9 +124,7 @@ function applyRequiredFlags(tabs, requiredFieldnames) {
     })),
   }))
 }
-
 const fetchedTabs = ref(null)
-
 if (props.tabs || props.fields) {
   // Static layout — nothing to fetch
 } else if (props.doctype && props.fieldnames) {
@@ -159,7 +147,7 @@ if (props.tabs || props.fields) {
   )
 } else if (props.doctype) {
   loading.value = true
-  createResource({
+  useQuery({
     url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_fields_layout',
     params: { doctype: props.doctype, type: 'Quick Entry' },
     auto: true,
@@ -173,16 +161,13 @@ if (props.tabs || props.fields) {
     },
   })
 }
-
 const resolvedTabs = computed(() => {
   let tabs = props.tabs || (props.fields ? wrapFieldsInTab(props.fields) : null)
   if (!tabs) tabs = fetchedTabs.value
   if (!tabs) return null
   return applyRequiredFlags(tabs, props.required)
 })
-
 // ── Validation ──
-
 function validate() {
   error.value = ''
   const allFields = []
@@ -193,12 +178,10 @@ function validate() {
       }
     }
   }
-
   let doctypesMeta = {}
   if (props.doctype) {
     doctypesMeta = getMeta(props.doctype)?.doctypesMeta || {}
   }
-
   const missing = findMissingMandatory(allFields, localDoc, {
     propertyOverrides: fieldLayoutContext.fieldPropertyOverrides,
     doctypesMeta,
@@ -209,23 +192,17 @@ function validate() {
   }
   return true
 }
-
 // ── Close handlers ──
-
 function handleCancel() {
   show.value = false
   cancel()
 }
-
 // Catches overlay click / escape key close
 watch(show, (val) => {
   if (!val) cancel()
 })
-
 // ── Actions ──
-
 const actionLoadingMap = reactive({})
-
 const resolvedActions = computed(() => {
   // Custom actions — full control, onSubmit ignored
   if (props.actions) {
@@ -259,7 +236,6 @@ const resolvedActions = computed(() => {
       },
     }))
   }
-
   // Default buttons — Submit (always) + Cancel (if cancelLabel provided)
   const buttons = [
     {
@@ -285,7 +261,6 @@ const resolvedActions = computed(() => {
       },
     },
   ]
-
   if (props.cancelLabel) {
     buttons.push({
       label: props.cancelLabel,
@@ -296,7 +271,6 @@ const resolvedActions = computed(() => {
       },
     })
   }
-
   return buttons
 })
 </script>

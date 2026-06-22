@@ -72,7 +72,9 @@
 <script setup>
 import UserAvatar from '@/components/UserAvatar.vue'
 import AttachmentItem from '@/components/AttachmentItem.vue'
-import { Tooltip, Dropdown, Button, TextEditor, call, toast } from 'frappe-ui'
+import { Tooltip, Dropdown, Button, toast } from 'frappe-ui'
+import { call } from '@/api/call'
+import TextEditor from '@/components/TextEditor.vue'
 import { timeAgo, formatDate, sanitizeHTML, ConfirmDelete } from '@/utils'
 import { sessionStore } from '@/stores/session'
 import { computed, ref } from 'vue'

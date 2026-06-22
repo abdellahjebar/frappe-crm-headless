@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <LayoutHeader>
     <template #left-header>
       <ViewBreadcrumbs routeName="Calendar" />
@@ -65,7 +65,7 @@
                   variant="ghost"
                   class="text-lg-medium text-ink-gray-7"
                   :label="currentMonthYear"
-                  iconRight="chevron-down"
+                  iconRight="lucide-chevron-down"
                   @click="togglePopover"
                 />
               </template>
@@ -75,7 +75,6 @@
           <!-- actions buttons for calendar -->
           <div class="flex gap-x-1">
             <!-- Increment and Decrement Button -->
-
             <Button
               variant="ghost"
               icon="lucide-chevron-left"
@@ -91,7 +90,6 @@
               icon="lucide-chevron-right"
               @click="increment"
             />
-
             <!-- View Buttons -->
             <FormControl
               type="select"
@@ -105,7 +103,6 @@
               :placeholder="__('Operator')"
               @update:modelValue="updateActiveView($event)"
             />
-
             <Link
               class="form-control"
               :value="getUser(currentUser).full_name"
@@ -136,7 +133,6 @@
         </div>
       </template>
     </Calendar>
-
     <!-- Event Panel Container -->
     <div
       class="overflow-hidden flex-none transition-all duration-300 ease-in-out flex flex-col"
@@ -173,39 +169,27 @@ import { usersStore } from '@/stores/users'
 import { globalStore } from '@/stores/global'
 import { getSettings } from '@/stores/settings'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
-import {
-  Calendar,
-  createListResource,
-  dayjs,
-  DatePicker,
-  Tooltip,
-  CalendarActiveEvent as activeEvent,
-  call,
-  toast,
-} from 'frappe-ui'
+import { Calendar, dayjs, DatePicker, Tooltip, CalendarActiveEvent as activeEvent, toast } from 'frappe-ui'
+import { call } from '@/api/call'
 import { onMounted, ref, computed, provide, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-
+import { useList } from '@/composables/useList'
 const { user } = sessionStore()
 const { $dialog } = globalStore()
 const { settings } = getSettings()
 const { users, getUser } = usersStore()
 const route = useRoute()
-
 const modeMap = {
   Daily: 'Day',
   Weekly: 'Week',
   Monthly: 'Month',
 }
-
 const defaultMode = computed(() => {
   return modeMap[settings.value?.default_calendar_view] || 'Week'
 })
-
 const calendar = ref(null)
 const activeRangeKey = ref('')
 const currentUser = ref(user)
-
 async function updateUser(u) {
   currentUser.value = u
   events.update({
@@ -213,7 +197,6 @@ async function updateUser(u) {
   })
   await events.reload()
 }
-
 function buildEventFilters(range) {
   const filters = [['status', '=', 'Open']]
   if (range?.startDate && range?.endDate) {
@@ -226,15 +209,13 @@ function buildEventFilters(range) {
   }
   return filters
 }
-
 function buildEventOrFilters() {
   return [
     ['owner', '=', currentUser.value],
     ['Event Participants', 'email', '=', currentUser.value],
   ]
 }
-
-const events = createListResource({
+const events = useList({
   doctype: 'Event',
   fields: [
     'name',
@@ -278,18 +259,14 @@ const events = createListResource({
         (ev, index, self) => index === self.findIndex((e) => e.id === ev.id),
       ),
 })
-
 provide('events', events)
-
 const eventPanel = ref(null)
 const showEventPanel = ref(false)
 const event = ref({})
 const mode = ref('')
-
 const isCreateDisabled = computed(() =>
   ['edit', 'new', 'duplicate'].includes(mode.value),
 )
-
 // Temp event helpers
 const TEMP_EVENT_IDS = new Set(['new-event', 'duplicate-event'])
 const isTempEvent = (id) => TEMP_EVENT_IDS.has(id)
@@ -297,7 +274,6 @@ function removeTempEvents() {
   if (!Array.isArray(events.data)) return
   events.data = events.data.filter((ev) => !isTempEvent(ev.id))
 }
-
 function openEvent(e, nextMode, reloadEvent = false) {
   const _e = e?.calendarEvent || e
   if (!_e?.id || isTempEvent(_e.id)) return
@@ -307,12 +283,10 @@ function openEvent(e, nextMode, reloadEvent = false) {
   activeEvent.value = _e.id
   mode.value = nextMode
 }
-
 function saveEvent(_event) {
   if (!_event?.id || isTempEvent(_event.id)) return createEvent(_event)
   updateEvent(_event)
 }
-
 function buildEventPayload(_event) {
   return {
     subject: _event.title,
@@ -330,7 +304,6 @@ function buildEventPayload(_event) {
     notifications: _event.notifications,
   }
 }
-
 function createEvent(_event) {
   if (!_event?.title) return
   events.insert.submit(buildEventPayload(_event), {
@@ -345,13 +318,10 @@ function createEvent(_event) {
     },
   })
 }
-
 async function updateEvent(_event, afterDrag = false) {
   if (!_event.id) return
-
   _event.fromTime = dayjs(_event.fromTime, 'HH:mm').format('HH:mm')
   _event.toTime = dayjs(_event.toTime, 'HH:mm').format('HH:mm')
-
   if (
     ['duplicate', 'new'].includes(mode.value) &&
     !['duplicate-event', 'new-event'].includes(_event.id) &&
@@ -361,7 +331,6 @@ async function updateEvent(_event, afterDrag = false) {
     activeEvent.value = _event.id
     mode.value = 'details'
   }
-
   if (mode.value == 'edit' && afterDrag) {
     eventPanel.value.updateEvent({
       fromDate: _event.fromDate,
@@ -371,7 +340,6 @@ async function updateEvent(_event, afterDrag = false) {
     })
     return
   }
-
   if (!mode.value || mode.value == 'edit' || mode.value === 'details') {
     // Ensure Contacts exist for participants referencing a new/unknown Contact, if not create them
     if (
@@ -382,7 +350,6 @@ async function updateEvent(_event, afterDrag = false) {
         _event.event_participants,
       )
     }
-
     events.setValue.submit(
       { name: _event.id, ...buildEventPayload(_event) },
       {
@@ -400,10 +367,8 @@ async function updateEvent(_event, afterDrag = false) {
     event.value = { ..._event }
   }
 }
-
 function deleteEvent(eventID) {
   if (!eventID) return
-
   $dialog({
     title: __('Delete'),
     message: __('Are you sure you want to delete this event?'),
@@ -433,14 +398,12 @@ function deleteEvent(eventID) {
     ],
   })
 }
-
 function syncEvent(eventID, _event) {
   if (!eventID || !Array.isArray(events.data)) return
   const target = events.data.find((event) => event.id === eventID)
   if (!target) return
   Object.assign(target, _event)
 }
-
 async function handleRangeChange(range) {
   if (!range?.startDate || !range?.endDate) return
   const key = `${range.view}-${range.startDate}-${range.endDate}`
@@ -454,26 +417,21 @@ async function handleRangeChange(range) {
   })
   await events.reload()
 }
-
 onMounted(async () => {
   activeEvent.value = ''
   mode.value = ''
   showEventPanel.value = false
-
   const { eventId, date } = route.query
   if (eventId && date) {
     await events.promise
     await nextTick()
-
     // Set calendar date to the event's date
     if (calendar.value.onMonthYearChange) {
       calendar.value.onMonthYearChange(dayjs(date).toDate())
     }
-
     showDetails({ id: eventId })
   }
 })
-
 // Global shortcut: Cmd/Ctrl + E -> new event (when not already creating/editing)
 useKeyboardShortcuts({
   shortcuts: [
@@ -493,18 +451,14 @@ useKeyboardShortcuts({
     },
   ],
 })
-
 function showDetails(e, reloadEvent = false) {
   openEvent(e, 'details', reloadEvent)
 }
-
 function editDetails(e) {
   openEvent(e, 'edit')
 }
-
 function buildTempEvent(e = {}, duplicate = false) {
   const id = duplicate ? 'duplicate-event' : 'new-event'
-
   return {
     id,
     title: e.title,
@@ -525,10 +479,8 @@ function buildTempEvent(e = {}, duplicate = false) {
     notifications: e.notifications || [],
   }
 }
-
 function newEvent(e = {}, duplicate = false) {
   removeTempEvents()
-
   let base = { ...e }
   if (!duplicate) {
     const [fromTime, toTime] = getFromToTime(e.time)
@@ -542,7 +494,6 @@ function newEvent(e = {}, duplicate = false) {
       isFullDay: e.isFullDay,
     }
   }
-
   event.value = buildTempEvent(base, duplicate)
   if (!Array.isArray(events.data)) {
     events.data = []
@@ -552,20 +503,16 @@ function newEvent(e = {}, duplicate = false) {
   activeEvent.value = event.value.id
   mode.value = duplicate ? 'duplicate' : 'new'
 }
-
 function duplicateEvent(e) {
   newEvent(e, true)
 }
-
 function close() {
   showEventPanel.value = false
   event.value = {}
   activeEvent.value = ''
   mode.value = ''
-
   removeTempEvents()
 }
-
 // utils
 function getFromToTime(time) {
   const pad = (v) => String(v).padStart(2, '0')
@@ -595,7 +542,6 @@ function getFromToTime(time) {
     `${pad(toHour)}:${pad(fromMinute)}`,
   ]
 }
-
 async function ensureParticipantContacts(participants) {
   if (!Array.isArray(participants) || !participants.length) return participants
   const updated = []

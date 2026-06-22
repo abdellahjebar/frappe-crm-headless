@@ -39,26 +39,22 @@
     </template>
   </Dialog>
 </template>
-
 <script setup lang="ts">
 import { getRandom } from '@/utils'
-import { createResource, Dialog, FormControl } from 'frappe-ui'
+import { Dialog, FormControl } from 'frappe-ui'
 import { ref, reactive, inject } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const show = defineModel({
   type: Boolean,
   default: false,
 })
-
 const items = defineModel('items', {
   type: Array,
   default: () => [],
 })
-
 const fromDate = inject('fromDate', ref(''))
 const toDate = inject('toDate', ref(''))
 const filters = inject('filters', reactive({ period: '', user: '' }))
-
 const chartType = ref('spacer')
 const chartTypes = [
   { label: __('Spacer'), value: 'spacer' },
@@ -66,7 +62,6 @@ const chartTypes = [
   { label: __('Axis Chart'), value: 'axis_chart' },
   { label: __('Donut Chart'), value: 'donut_chart' },
 ]
-
 const numberChart = ref('')
 const numberCharts = [
   { label: __('Total Leads'), value: 'total_leads' },
@@ -84,7 +79,6 @@ const numberCharts = [
     value: 'average_time_to_close_a_deal',
   },
 ]
-
 const axisChart = ref('sales_trend')
 const axisCharts = [
   { label: __('Sales Trend'), value: 'sales_trend' },
@@ -95,14 +89,12 @@ const axisCharts = [
   { label: __('Deals by Territory'), value: 'deals_by_territory' },
   { label: __('Deals by Salesperson'), value: 'deals_by_salesperson' },
 ]
-
 const donutChart = ref('deals_by_stage_donut')
 const donutCharts = [
   { label: __('Deals by Stage'), value: 'deals_by_stage_donut' },
   { label: __('Leads by Source'), value: 'leads_by_source' },
   { label: __('Deals by Source'), value: 'deals_by_source' },
 ]
-
 async function addChart() {
   show.value = false
   if (chartType.value == 'spacer') {
@@ -115,7 +107,6 @@ async function addChart() {
     await getChart(chartType.value)
   }
 }
-
 async function getChart(type: string) {
   let name =
     type == 'number_chart'
@@ -123,8 +114,7 @@ async function getChart(type: string) {
       : type == 'axis_chart'
         ? axisChart.value
         : donutChart.value
-
-  await createResource({
+  await useQuery({
     url: 'crm.api.dashboard.get_chart',
     params: {
       name,
@@ -137,12 +127,10 @@ async function getChart(type: string) {
     onSuccess: (data = {}) => {
       let width = 4
       let height = 2
-
       if (['axis_chart', 'donut_chart'].includes(type)) {
         width = 10
         height = 7
       }
-
       items.value.push({
         name,
         type,

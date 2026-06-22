@@ -1,17 +1,14 @@
-import { createResource } from 'frappe-ui'
+import { useQuery } from '@/composables/useQuery'
 
-export const filterableFields = createResource({
+export const filterableFields = useQuery({
   url: 'crm.api.doc.get_filterable_fields',
   transform: (data) => {
-    data = data
-      .filter((field) => !field.fieldname.startsWith('_'))
-      .map((field) => {
-        return {
-          label: field.label,
-          value: field.fieldname,
-          ...field,
-        }
-      })
     return data
+      .filter((field) => !field.fieldname.startsWith('_'))
+      .map((field) => ({
+        label: field.label,
+        value: field.fieldname,
+        ...field,
+      }))
   },
 })

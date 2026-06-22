@@ -1,4 +1,4 @@
-<!-- eslint-disable vue/no-v-html -->
+﻿<!-- eslint-disable vue/no-v-html -->
 <template>
   <div
     v-if="reply?.message"
@@ -21,7 +21,6 @@
         v-html="sanitizeHTML(reply.message)"
       />
     </div>
-
     <Button variant="ghost" icon="lucide-x" @click="reply = {}" />
   </div>
   <div class="flex items-end gap-2 px-3 py-2.5 sm:px-10" v-bind="$attrs">
@@ -68,50 +67,36 @@
     />
   </div>
 </template>
-
 <script setup>
 import IconPicker from '@/components/IconPicker.vue'
 import SmileIcon from '@/components/Icons/SmileIcon.vue'
 import { sanitizeHTML } from '@/utils'
-import { useTelemetry } from 'frappe-ui/frappe'
-import {
-  createResource,
-  Textarea,
-  FileUploader,
-  Dropdown,
-  toast,
-} from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
+import { Textarea, FileUploader, Dropdown, toast } from 'frappe-ui'
 import { ref, nextTick, watch } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   doctype: { type: String, default: '' },
 })
-
 const doc = defineModel({ type: Object, default: () => ({}) })
 const whatsapp = defineModel('whatsapp', { type: Object, default: () => ({}) })
 const reply = defineModel('reply', { type: Object, default: () => ({}) })
-
 const { capture } = useTelemetry()
-
 const rows = ref(1)
 const textareaRef = ref(null)
 const emoji = ref('')
-
 const content = ref('')
 const placeholder = ref(__('Type your message here...'))
 const fileType = ref('')
-
 function show() {
   nextTick(() => textareaRef.value.el.focus())
 }
-
 function uploadFile(file) {
   whatsapp.value.attach = file.file_url
   whatsapp.value.content_type = fileType.value
   sendWhatsAppMessage()
   capture('whatsapp_upload_file')
 }
-
 function sendTextMessage(event) {
   if (event.shiftKey) return
   sendWhatsAppMessage()
@@ -119,7 +104,6 @@ function sendTextMessage(event) {
   content.value = ''
   capture('whatsapp_send_message')
 }
-
 async function sendWhatsAppMessage() {
   let args = {
     reference_doctype: props.doctype,
@@ -135,7 +119,7 @@ async function sendWhatsAppMessage() {
   whatsapp.value.attach = ''
   whatsapp.value.content_type = 'text'
   reply.value = {}
-  createResource({
+  useQuery({
     url: 'crm.api.whatsapp.create_whatsapp_message',
     params: args,
     auto: true,
@@ -145,7 +129,6 @@ async function sendWhatsAppMessage() {
     },
   })
 }
-
 function uploadOptions(openFileSelector) {
   return [
     {
@@ -174,12 +157,10 @@ function uploadOptions(openFileSelector) {
     },
   ]
 }
-
 watch(reply, (value) => {
   if (value?.message) {
     show()
   }
 })
-
 defineExpose({ show })
 </script>

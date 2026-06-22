@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex items-center">
     <Button
       :variant="$attrs.variant"

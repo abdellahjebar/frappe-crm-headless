@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Dialog v-model:open="show" :title="__('Attach')" :size="'xl'">
     <template #default>
       <FilesUploaderArea
@@ -23,7 +23,7 @@
               filesUploaderArea?.showWebLink || filesUploaderArea?.showCamera
             "
             :label="isMobileView ? __('Back') : __('Back to File Upload')"
-            iconLeft="arrow-left"
+            iconLeft="lucide-arrow-left"
             @click="
               () => {
                 filesUploaderArea.showWebLink = false

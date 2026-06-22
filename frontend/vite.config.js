@@ -9,10 +9,40 @@ import * as LucideIcons from 'lucide-static'
 const backendUrl = process.env.VITE_BACKEND_URL || 'http://localhost:8000'
 
 /**
- * esbuild plugin that resolves ~icons/lucide/* during the optimizeDeps pre-bundling phase.
- * Vite plugins (like lucideIcons()) only run at serve/transform time — esbuild pre-bundler
- * runs separately and needs its own resolver for these virtual imports.
+ * esbuild plugin that resolves frappe-ui's internal subpath imports (#molecules/*, #utils/*).
+ * frappe-ui publishes TypeScript source with package.json "imports" aliases that esbuild's
+ * pre-bundler doesn't auto-resolve; we map them to real files, preserving .vue extensions
+ * and appending .ts only when there's no extension already.
  */
+function frappeUiSubpathPlugin() {
+  const root = path.resolve(__dirname, 'node_modules/frappe-ui/src')
+  function resolve(prefix, subpath) {
+    const hasExt = /\.[a-zA-Z0-9]+$/.test(subpath)
+    return path.resolve(root, prefix, subpath) + (hasExt ? '' : '.ts')
+  }
+  return {
+    name: 'frappe-ui-subpath',
+    setup(build) {
+      const map = {
+        '#molecules/': 'molecules',
+        '#components/': 'components',
+        '#composables/': 'composables',
+        '#utils/': 'utils',
+      }
+      build.onResolve({ filter: /^#(molecules|components|composables|utils)\// }, (args) => {
+        const prefix = Object.keys(map).find((k) => args.path.startsWith(k))
+        if (!prefix) return undefined
+        const subpath = args.path.slice(prefix.length)
+        const fullPath = resolve(map[prefix], subpath)
+        // .vue files must go through Vite's Vue plugin — esbuild has no .vue loader.
+        // Mark external; Vite's dev server serves them via /@fs/ at request time.
+        if (fullPath.endsWith('.vue')) return { external: true, path: fullPath }
+        return { path: fullPath }
+      })
+    },
+  }
+}
+
 function lucideIconsEsbuildPlugin() {
   const icons = buildIconMap()
   return {
@@ -89,21 +119,31 @@ export default defineConfig({
   ],
 
   resolve: {
-    alias: { '@': path.resolve(__dirname, 'src') },
-    dedupe: ['vue', 'vue-router', 'frappe-ui', 'dompurify'],
+    alias: [
+      { find: '@', replacement: path.resolve(__dirname, 'src') },
+      { find: /^#molecules\/(.*)/, replacement: path.resolve(__dirname, 'node_modules/frappe-ui/src/molecules') + '/$1' },
+      { find: /^#components\/(.*)/, replacement: path.resolve(__dirname, 'node_modules/frappe-ui/src/components') + '/$1' },
+      { find: /^#composables\/(.*)/, replacement: path.resolve(__dirname, 'node_modules/frappe-ui/src/composables') + '/$1' },
+      { find: /^#utils\/(.*)/, replacement: path.resolve(__dirname, 'node_modules/frappe-ui/src/utils') + '/$1' },
+    ],
+    dedupe: [
+      'vue', 'vue-router', 'frappe-ui', 'dompurify',
+      'prosemirror-state', 'prosemirror-view', 'prosemirror-model',
+      'prosemirror-transform', 'prosemirror-gapcursor', 'prosemirror-commands',
+      'prosemirror-keymap', 'prosemirror-history', 'prosemirror-inputrules',
+      'prosemirror-schema-list', 'prosemirror-dropcursor', 'prosemirror-tables',
+    ],
   },
 
   optimizeDeps: {
     include: [
       'feather-icons',
-      'prosemirror-state',
-      'prosemirror-view',
       'lowlight',
       'interactjs',
       'highlight.js/lib/core',
     ],
     esbuildOptions: {
-      plugins: [lucideIconsEsbuildPlugin()],
+      plugins: [frappeUiSubpathPlugin(), lucideIconsEsbuildPlugin()],
     },
   },
 

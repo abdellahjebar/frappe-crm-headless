@@ -241,24 +241,8 @@
     :onCancel="() => (showConfirmDialog.show = false)"
   />
 </template>
-
 <script setup>
-import {
-  Badge,
-  Button,
-  Checkbox,
-  ConfirmDialog,
-  createResource,
-  DatePicker,
-  ErrorMessage,
-  FormControl,
-  FormLabel,
-  LoadingIndicator,
-  Popover,
-  Select,
-  Switch,
-  toast,
-} from 'frappe-ui'
+import { Badge, Button, Checkbox, ConfirmDialog, DatePicker, ErrorMessage, FormControl, FormLabel, LoadingIndicator, Popover, Select, Switch, toast } from 'frappe-ui'
 import { inject, onMounted, onUnmounted, ref, watch } from 'vue'
 import SettingsLayoutBase from '../../Layouts/SettingsLayoutBase.vue'
 import {
@@ -272,7 +256,7 @@ import { disableSettingModalOutsideClick } from '../../../composables/settings'
 import { convertToConditions } from '../../../utils'
 import SlaHolidays from './SlaHolidays.vue'
 import SlaPriorityList from './SlaPriorityList.vue'
-
+import { useQuery } from '@/composables/useQuery'
 const isDirty = ref(false)
 const initialData = ref(null)
 const useNewUI = ref(true)
@@ -283,14 +267,11 @@ const showConfirmDialog = ref({
   message: '',
   onConfirm: () => {},
 })
-
 const slaPolicyListResource = inject('slaPolicyListResource')
 const step = inject('step')
 const updateStep = inject('updateStep')
-
 const deskUrl = `${window.location.origin}/app/crm-service-level-agreement/${step.value.data?.name}`
-
-const getSlaResource = createResource({
+const getSlaResource = useQuery({
   url: 'frappe.client.get',
   params: {
     doctype: 'CRM Service Level Agreement',
@@ -308,7 +289,6 @@ const getSlaResource = createResource({
       )
       condition_json = []
     }
-
     const newData = {
       ...data,
       enabled: Boolean(data.enabled),
@@ -319,7 +299,6 @@ const getSlaResource = createResource({
     }
     slaData.value = newData
     step.value.data = newData
-
     initialData.value = JSON.stringify(newData)
     const conditionsAvailable = slaData.value.condition?.length > 0
     const conditionsJsonAvailable = slaData.value.condition_json?.length > 0
@@ -332,13 +311,11 @@ const getSlaResource = createResource({
     }
   },
 })
-
 if (step.value.data && step.value.fetchData) {
   getSlaResource.submit()
 } else {
   disableSettingModalOutsideClick.value = true
 }
-
 const goBack = () => {
   const confirmDialogInfo = {
     show: true,
@@ -366,7 +343,6 @@ const goBack = () => {
   }, 250)
   showConfirmDialog.value.show = false
 }
-
 const toggleEnabled = () => {
   if (slaData.value.default) {
     toast.error(__('SLA set as default cannot be disabled'))
@@ -374,24 +350,20 @@ const toggleEnabled = () => {
   }
   slaData.value.enabled = !slaData.value.enabled
 }
-
 const toggleDefaultSla = () => {
   slaData.value.default = !slaData.value.default
   if (slaData.value.default) {
     slaData.value.enabled = true
   }
 }
-
 const saveSla = () => {
   const validationErrors = validateSlaData(undefined, !useNewUI.value)
-
   if (Object.values(validationErrors).some((error) => error)) {
     toast.error(
       __('Invalid fields, check if all are filled in and values are correct.'),
     )
     return
   }
-
   if (step.value.data) {
     if (isOldSla.value && useNewUI.value) {
       showConfirmDialog.value = {
@@ -412,7 +384,6 @@ const saveSla = () => {
     createSla()
   }
 }
-
 const createSla = () => {
   slaPolicyListResource.insert.submit(
     {
@@ -441,8 +412,7 @@ const createSla = () => {
     },
   )
 }
-
-const renameSlaResource = createResource({
+const renameSlaResource = useQuery({
   url: 'frappe.client.rename_doc',
   makeParams() {
     return {
@@ -452,7 +422,6 @@ const renameSlaResource = createResource({
     }
   },
 })
-
 const updateSla = async () => {
   await slaPolicyListResource.setValue.submit(
     {
@@ -477,7 +446,6 @@ const updateSla = async () => {
       },
     },
   )
-
   if (slaData.value.name !== slaData.value.sla_name) {
     await renameSlaResource.submit().catch(async (er) => {
       const error =
@@ -486,7 +454,6 @@ const updateSla = async () => {
       // Reset assignment rule to previous state
       await getSlaResource.reload()
     })
-
     getSlaResource.submit({
       doctype: 'CRM Service Level Agreement',
       name: slaData.value.sla_name,
@@ -494,11 +461,9 @@ const updateSla = async () => {
   } else {
     await getSlaResource.reload()
   }
-
   toast.success(__('SLA Policy Updated'))
   slaPolicyListResource.reload()
 }
-
 watch(
   slaData,
   (newVal) => {
@@ -512,17 +477,14 @@ watch(
   },
   { deep: true },
 )
-
 const beforeUnloadHandler = (event) => {
   if (!isDirty.value) return
   event.preventDefault()
   event.returnValue = true
 }
-
 onMounted(() => {
   addEventListener('beforeunload', beforeUnloadHandler)
 })
-
 onUnmounted(() => {
   removeEventListener('beforeunload', beforeUnloadHandler)
   resetSlaDataErrors()

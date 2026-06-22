@@ -97,55 +97,42 @@
 <script setup>
 import { validateEmail, convertArrayToString } from '@/utils'
 import { usersStore } from '@/stores/users'
-import { useOnboarding, useTelemetry } from 'frappe-ui/frappe'
-import {
-  toast,
-  createListResource,
-  createResource,
-  FormControl,
-} from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
+import { useOnboarding } from '@/composables/useOnboarding'
+import { toast, FormControl } from 'frappe-ui'
 import { ref, computed } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
+import { useList } from '@/composables/useList'
 const { updateOnboardingStep } = useOnboarding('frappecrm')
 const { users, isAdmin } = usersStore()
 const { capture } = useTelemetry()
-
 const invitees = ref([])
 const role = ref('Sales User')
 const error = ref(null)
-
 const userExistMessage = computed(() => {
   const inviteesSet = new Set(invitees.value)
   if (!inviteesSet.size) return null
-
   if (!users.data?.crmUsers?.length) return null
   const existingEmails = users.data.crmUsers.map((user) => user.name)
   const existingUsersSet = new Set(existingEmails)
-
   const existingInvitees = inviteesSet.intersection(existingUsersSet)
   if (existingInvitees.size === 0) return null
-
   return __('User with email {0} already exists', [
     Array.from(existingInvitees).join(', '),
   ])
 })
-
 const inviteeExistMessage = computed(() => {
   const inviteesSet = new Set(invitees.value)
   if (!inviteesSet.size) return null
-
   if (!pendingInvitations.data?.length) return null
   const existingEmails = pendingInvitations.data.map((user) => user.email)
   const existingUsersSet = new Set(existingEmails)
-
   const existingInvitees = inviteesSet.intersection(existingUsersSet)
   if (existingInvitees.size === 0) return null
-
   return __('User with email {0} already invited', [
     Array.from(existingInvitees).join(', '),
   ])
 })
-
 const description = computed(() => {
   return {
     'System Manager':
@@ -156,7 +143,6 @@ const description = computed(() => {
       'Can work with leads and deals and create private views (reports).',
   }[role.value]
 })
-
 const roleOptions = computed(() => {
   return [
     { value: 'Sales User', label: __('Sales User') },
@@ -164,14 +150,12 @@ const roleOptions = computed(() => {
     ...(isAdmin() ? [{ value: 'System Manager', label: __('Admin') }] : []),
   ]
 })
-
 const roleMap = {
   'Sales User': __('Sales User'),
   'Sales Manager': __('Manager'),
   'System Manager': __('Admin'),
 }
-
-const inviteByEmail = createResource({
+const inviteByEmail = useQuery({
   url: 'crm.api.invite_by_email',
   makeParams() {
     return {
@@ -193,8 +177,7 @@ const inviteByEmail = createResource({
     toast.error(error.value)
   },
 })
-
-const pendingInvitations = createListResource({
+const pendingInvitations = useList({
   type: 'list',
   doctype: 'CRM Invitation',
   filters: { status: 'Pending' },
@@ -202,7 +185,6 @@ const pendingInvitations = createListResource({
   pageLength: 999,
   auto: true,
 })
-
 function updateInvitees(value) {
   const emails = value
     .split(',')

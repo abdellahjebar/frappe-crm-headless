@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div v-show="showCallPopup" v-bind="$attrs">
     <div
       ref="callPopup"
@@ -167,7 +167,6 @@
     </div>
   </div>
 </template>
-
 <script setup>
 import NoteIcon from '@/components/Icons/NoteIcon.vue'
 import MinimizeIcon from '@/components/Icons/MinimizeIcon.vue'
@@ -176,17 +175,17 @@ import CountUpTimer from '@/components/CountUpTimer.vue'
 import { useDoctypeModal } from '@/composables/doctypeModal'
 import { Device } from '@twilio/voice-sdk'
 import { useDraggable, useWindowSize } from '@vueuse/core'
-import { useTelemetry, useOnboarding } from 'frappe-ui/frappe'
-import { Avatar, call, createResource } from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
+import { useOnboarding } from '@/composables/useOnboarding'
+import { Avatar } from 'frappe-ui'
+import { call } from '@/api/call'
 import { ref, watch } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const { capture } = useTelemetry()
 const { updateOnboardingStep } = useOnboarding('frappecrm')
-
 let device = ''
-let log = ref('Connecting...')
+let log = ref('')
 let _call = null
-
 let showCallPopup = ref(false)
 let showSmallCallWindow = ref(false)
 let onCall = ref(false)
@@ -195,21 +194,17 @@ let muted = ref(false)
 let callPopup = ref(null)
 let counterUp = ref(null)
 let callStatus = ref('')
-
 const phoneNumber = ref('')
-
 const contact = ref({
   full_name: '',
   image: '',
   mobile_no: '',
 })
-
 watch(phoneNumber, (value) => {
   if (!value) return
   getContact.fetch()
 })
-
-const getContact = createResource({
+const getContact = useQuery({
   url: 'crm.integrations.api.get_contact_by_phone_number',
   makeParams() {
     return {
@@ -221,14 +216,12 @@ const getContact = createResource({
     contact.value = data
   },
 })
-
 const { showModal } = useDoctypeModal()
 const note = ref({
   name: '',
   title: '',
   content: '',
 })
-
 function openNoteModal() {
   showModal({
     name: note.value.name || null,
@@ -240,7 +233,6 @@ function openNoteModal() {
     },
   })
 }
-
 async function updateNote(_note, isInsert = false) {
   note.value = _note
   if (isInsert && _note.name) {
@@ -254,17 +246,13 @@ async function updateNote(_note, isInsert = false) {
     capture('note_updated')
   }
 }
-
 const { width, height } = useWindowSize()
-
 let { style } = useDraggable(callPopup, {
   initialValue: { x: width.value - 280, y: height.value - 310 },
   preventDefault: true,
 })
-
 async function startupClient() {
   log.value = 'Requesting Access Token...'
-
   try {
     const data = await call('crm.integrations.twilio.api.generate_access_token')
     log.value = 'Got a token.'
@@ -273,40 +261,31 @@ async function startupClient() {
     log.value = 'An error occurred. ' + err.message
   }
 }
-
 function intitializeDevice(token) {
   device = new Device(token, {
     codecPreferences: ['opus', 'pcmu'],
     fakeLocalDTMF: true,
     enableRingingState: true,
   })
-
   addDeviceListeners()
-
   device.register()
 }
-
 function addDeviceListeners() {
   device.on('registered', () => {
     log.value = 'Ready to make and receive calls!'
   })
-
   device.on('unregistered', () => {
     log.value = 'Logged out'
   })
-
   device.on('error', (error) => {
     log.value = 'Twilio.Device Error: ' + error.message
   })
-
   device.on('incoming', handleIncomingCall)
-
   device.on('tokenWillExpire', async () => {
     const data = await call('crm.integrations.twilio.api.generate_access_token')
     device.updateToken(data.token)
   })
 }
-
 function toggleMute() {
   if (_call.isMuted()) {
     _call.mute(false)
@@ -316,41 +295,33 @@ function toggleMute() {
     muted.value = true
   }
 }
-
 function handleIncomingCall(call) {
   log.value = `Incoming call from ${call.parameters.From}`
   phoneNumber.value = call.parameters.From
-
   showCallPopup.value = true
   _call = call
-
   _call.on('accept', (conn) => {
     console.log('conn', conn)
   })
-
   // add event listener to call object
   call.on('cancel', handleDisconnectedIncomingCall)
   call.on('disconnect', handleDisconnectedIncomingCall)
   call.on('reject', handleDisconnectedIncomingCall)
 }
-
 async function acceptIncomingCall() {
   log.value = 'Accepted incoming call.'
   onCall.value = true
   await _call.accept()
   counterUp.value.start()
 }
-
 function rejectIncomingCall() {
   _call.reject()
   log.value = 'Rejected incoming call'
   showCallPopup.value = false
   showSmallCallWindow.value = false
-
   callStatus.value = ''
   muted.value = false
 }
-
 function hangUpCall() {
   _call.disconnect()
   log.value = 'Hanging up incoming call'
@@ -364,7 +335,6 @@ function hangUpCall() {
   }
   counterUp.value.stop()
 }
-
 function handleDisconnectedIncomingCall() {
   log.value = `Call ended from handle disconnected Incoming call.`
   showCallPopup.value = false
@@ -374,29 +344,21 @@ function handleDisconnectedIncomingCall() {
   onCall.value = false
   counterUp.value.stop()
 }
-
 async function makeOutgoingCall(number) {
   phoneNumber.value = number
-
   if (device) {
     log.value = `Attempting to call ${number} ...`
-
     try {
       _call = await device.connect({
         params: { To: number },
       })
-
       showCallPopup.value = true
       callStatus.value = 'initiating'
-
       capture('make_outgoing_call')
-
       _call.on('messageReceived', (message) => {
         let info = message.content
         callStatus.value = info.CallStatus
-
         log.value = `Call status: ${info.CallStatus}`
-
         if (info.CallStatus == 'in-progress') {
           log.value = `Call in progress.`
           calling.value = false
@@ -404,7 +366,6 @@ async function makeOutgoingCall(number) {
           counterUp.value.start()
         }
       })
-
       _call.on('accept', () => {
         log.value = `Initiated call!`
         showCallPopup.value = true
@@ -450,7 +411,6 @@ async function makeOutgoingCall(number) {
     log.value = 'Unable to make call.'
   }
 }
-
 function cancelCall() {
   _call.disconnect()
   showCallPopup.value = false
@@ -465,23 +425,19 @@ function cancelCall() {
     content: '',
   }
 }
-
 function toggleCallWindow() {
   showCallPopup.value = !showCallPopup.value
   showSmallCallWindow.value = !showSmallCallWindow.value
 }
-
 watch(
   () => log.value,
   (value) => {
-    console.log(value)
+    if (value) console.log(value)
   },
   { immediate: true },
 )
-
 defineExpose({ makeOutgoingCall, setup: startupClient })
 </script>
-
 <style scoped>
 .pulse::before {
   content: '';
@@ -492,7 +448,6 @@ defineExpose({ makeOutgoingCall, setup: startupClient })
   border-radius: 50%;
   animation: pulse 1s linear infinite;
 }
-
 .pulse::after {
   content: '';
   position: absolute;
@@ -503,18 +458,15 @@ defineExpose({ makeOutgoingCall, setup: startupClient })
   animation: pulse 1s linear infinite;
   animation-delay: 0.3s;
 }
-
 @keyframes pulse {
   0% {
     transform: scale(0.5);
     opacity: 0;
   }
-
   50% {
     transform: scale(1);
     opacity: 1;
   }
-
   100% {
     transform: scale(1.3);
     opacity: 0;

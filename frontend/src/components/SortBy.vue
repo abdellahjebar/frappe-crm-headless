@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Autocomplete
     v-if="!sortValues?.size"
     :options="options"
@@ -56,7 +56,7 @@
           class="shrink-0 [&_svg]:text-ink-gray-5"
           :iconLeft="!hideLabel && !sortValues?.size && SortIcon"
           :iconRight="
-            sortValues?.size && (isOpen ? 'chevron-up' : 'chevron-down')
+            sortValues?.size && (isOpen ? 'lucide-chevron-up' : 'lucide-chevron-down')
           "
           :class="sortValues.size ? 'rounded-l-none' : ''"
           @click.stop="togglePopover"
@@ -114,7 +114,7 @@
                       class="flex w-full items-center justify-between rounded-l-none !text-ink-gray-5"
                       size="md"
                       :label="displayValue(selectedValue)"
-                      :iconRight="open ? 'chevron-down' : 'chevron-up'"
+                      :iconRight="open ? 'lucide-chevron-down' : 'lucide-chevron-up'"
                       @click="togglePopover()"
                     />
                   </template>
@@ -141,7 +141,7 @@
                   class="!text-ink-gray-5"
                   :label="__('Add Sort')"
                   variant="ghost"
-                  iconLeft="plus"
+                  iconLeft="lucide-plus"
                   @click="togglePopover()"
                 />
               </template>
@@ -167,8 +167,9 @@ import SortIcon from '@/components/Icons/SortIcon.vue'
 import DragIcon from '@/components/Icons/DragIcon.vue'
 import Autocomplete from '@/components/frappe-ui/Autocomplete.vue'
 import { useSortable } from '@vueuse/integrations/useSortable'
-import { createResource, Popover } from 'frappe-ui'
+import { Popover } from 'frappe-ui'
 import { computed, nextTick, onMounted } from 'vue'
+import { useQuery } from '@/composables/useQuery'
 
 const props = defineProps({
   doctype: { type: String, required: true },
@@ -178,7 +179,7 @@ const props = defineProps({
 const emit = defineEmits(['update'])
 const list = defineModel({ type: Object, default: () => ({}) })
 
-const sortOptions = createResource({
+const sortOptions = useQuery({
   url: 'crm.api.doc.sort_options',
   cache: ['sortOptions', props.doctype],
   params: { doctype: props.doctype },

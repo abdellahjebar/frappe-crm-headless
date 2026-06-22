@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex flex-col gap-1.5 border-b sm:px-6 py-3 px-4">
     <div
       v-for="s in slaSection"
@@ -26,7 +26,7 @@
             <Button
               class="form-control bg-surface-base hover:bg-surface-base"
               :label="s.value"
-              :iconRight="open ? 'chevron-up' : 'chevron-down'"
+              :iconRight="open ? 'lucide-chevron-up' : 'lucide-chevron-down'"
             />
           </template>
         </Dropdown>
@@ -38,7 +38,7 @@
 import { Dropdown, Tooltip } from 'frappe-ui'
 import { timeAgo, formatDate, formatTime } from '@/utils'
 import { statusesStore } from '@/stores/statuses'
-import { useTelemetry } from 'frappe-ui/frappe'
+import { useTelemetry } from '@/composables/useTelemetry'
 import { computed } from 'vue'
 
 const data = defineModel({ type: Object, default: () => ({}) })

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { createResource } from 'frappe-ui'
+import { useQuery } from '@/composables/useQuery'
 import { sessionStore } from './session'
 import { computed, reactive } from 'vue'
 
@@ -8,7 +8,7 @@ export const usersStore = defineStore('crm-users', () => {
 
   let usersByName = reactive({})
 
-  const users = createResource({
+  const users = useQuery({
     url: 'crm.api.session.get_users',
     cache: 'crm-users',
     initialData: [],

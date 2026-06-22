@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <template v-if="normalActions.length && !isMobileView">
     <Button
       v-for="action in normalActions"
@@ -19,7 +19,7 @@
       <Dropdown v-slot="{ open }" :options="g.action">
         <Button
           :label="g.label"
-          :iconRight="open ? 'chevron-up' : 'chevron-down'"
+          :iconRight="open ? 'lucide-chevron-up' : 'lucide-chevron-down'"
         />
       </Dropdown>
     </div>

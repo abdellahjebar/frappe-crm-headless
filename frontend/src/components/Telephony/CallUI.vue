@@ -47,7 +47,8 @@ import TwilioCallUI from '@/components/Telephony/TwilioCallUI.vue'
 import ExotelCallUI from '@/components/Telephony/ExotelCallUI.vue'
 import { defaultCallingMedium, useTelephony } from '@/composables/telephony'
 import { globalStore } from '@/stores/global'
-import { FormControl, call, toast } from 'frappe-ui'
+import { FormControl, toast } from 'frappe-ui'
+import { call } from '@/api/call'
 import { computed, nextTick, ref, watch } from 'vue'
 
 const { setMakeCall } = globalStore()

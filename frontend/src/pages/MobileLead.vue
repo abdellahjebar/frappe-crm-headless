@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <LayoutHeader>
     <header
       class="relative flex h-10.5 items-center justify-between gap-2 py-2.5 pl-2"
@@ -25,7 +25,7 @@
             <Button
               v-if="doc.status"
               :label="statusLabel(doc.status)"
-              :iconRight="open ? 'chevron-up' : 'chevron-down'"
+              :iconRight="open ? 'lucide-chevron-up' : 'lucide-chevron-down'"
             >
               <template #prefix>
                 <IndicatorIcon :class="getLeadStatus(doc.status).color" />
@@ -153,18 +153,12 @@ import { useDocument } from '@/data/document'
 import { isMobileView } from '@/composables/settings'
 import { whatsappEnabled } from '@/composables/whatsapp'
 import { useActiveTabManager } from '@/composables/useActiveTabManager'
-import {
-  createResource,
-  Dropdown,
-  Tabs,
-  Breadcrumbs,
-  call,
-  usePageMeta,
-  toast,
-} from 'frappe-ui'
+import { Dropdown, Tabs, Breadcrumbs, usePageMeta, toast } from 'frappe-ui'
+import { call } from '@/api/call'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import ConvertToDealModal from '@/components/Modals/ConvertToDealModal.vue'
+import { useQuery } from '@/composables/useQuery'
 
 const { brand } = getSettings()
 const { $dialog, $socket } = globalStore()
@@ -332,7 +326,7 @@ const tabs = computed(() => {
 
 const { tabIndex } = useActiveTabManager(tabs, 'lastLeadTab')
 
-const sections = createResource({
+const sections = useQuery({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_sidepanel_sections',
   cache: ['sidePanelSections', 'CRM Lead'],
   params: { doctype: 'CRM Lead' },

@@ -131,30 +131,21 @@ import FileTextIcon from '@/components/Icons/FileTextIcon.vue'
 import FileAudioIcon from '@/components/Icons/FileAudioIcon.vue'
 import FileVideoIcon from '@/components/Icons/FileVideoIcon.vue'
 import { formatDate, convertSize } from '@/utils'
-import {
-  FormControl,
-  CircularProgressBar,
-  createResource,
-  toast,
-} from 'frappe-ui'
+import { FormControl, CircularProgressBar, toast } from 'frappe-ui'
 import { ref, onMounted, watch, onUnmounted } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   doctype: { type: String, required: true },
   options: { type: Object, default: () => ({}) },
 })
-
 const files = defineModel({ type: Array, default: () => [] })
-
 const fileInput = ref(null)
 const isDragging = ref(false)
 const showWebLink = ref(false)
 const showFileBrowser = ref(false)
 const showCamera = ref(false)
-
 const webLink = ref('')
 const cameraImage = ref(null)
-
 const allowMultiple = ref(props.options.allowMultiple == false ? false : true)
 const disableFileBrowser = ref(props.options.disableFileBrowser || true)
 const allowWebLink = ref(props.options.allowWebLink == false ? false : true)
@@ -163,9 +154,8 @@ const allowTakePhoto = ref(
 )
 const restrictions = ref(props.options.restrictions || {})
 const makeAttachmentsPublic = ref(props.options.makeAttachmentsPublic || false)
-
 onMounted(() => {
-  createResource({
+  useQuery({
     url: 'crm.api.get_file_uploader_defaults',
     params: { doctype: props.doctype },
     cache: ['file_uploader_defaults', props.doctype],
@@ -184,7 +174,6 @@ onMounted(() => {
     },
   })
 })
-
 function dragover() {
   isDragging.value = true
 }
@@ -195,23 +184,18 @@ function dropfiles(e) {
   isDragging.value = false
   addFiles(e.dataTransfer.files)
 }
-
 function browseFiles() {
   fileInput.value.click()
 }
-
 function onFileInput() {
   addFiles(fileInput.value.files)
   fileInput.value.value = ''
 }
-
 const video = ref(null)
 const facingMode = ref('environment')
 const stream = ref(null)
-
 async function startCamera() {
   showCamera.value = true
-
   stream.value = await navigator.mediaDevices.getUserMedia({
     video: {
       facingMode: facingMode.value,
@@ -220,33 +204,25 @@ async function startCamera() {
   })
   video.value.srcObject = stream.value
 }
-
 function stopStream() {
   stream.value?.getTracks()?.forEach((track) => track.stop())
   showCamera.value = false
   cameraImage.value = null
 }
-
 function switchCamera() {
   facingMode.value = facingMode.value === 'environment' ? 'user' : 'environment'
   stopStream()
   startCamera()
 }
-
 const canvas = ref(null)
-
 function captureImage() {
   const width = video.value.videoWidth
   const height = video.value.videoHeight
-
   canvas.value.width = width
   canvas.value.height = height
-
   canvas.value.getContext('2d').drawImage(video.value, 0, 0, width, height)
-
   cameraImage.value = canvas.value.toDataURL('image/png')
 }
-
 function uploadViaCamera() {
   const nowDatetime = formatDate(new Date(), 'YYYY_MM_DD_HH_mm_ss')
   let filename = `capture_${nowDatetime}.png`
@@ -256,13 +232,11 @@ function uploadViaCamera() {
     cameraImage.value = null
   })
 }
-
 function urlToFile(url, filename, mime_type) {
   return fetch(url)
     .then((res) => res.arrayBuffer())
     .then((buffer) => new File([buffer], filename, { type: mime_type }))
 }
-
 function addFiles(fileArray) {
   let _files = Array.from(fileArray)
     .filter(checkRestrictions)
@@ -288,26 +262,20 @@ function addFiles(fileArray) {
         private: !makeAttachmentsPublic.value,
       }
     })
-
   // pop extra files as per FileUploader.restrictions.maxNumberOfFiles
   let maxNumberOfFiles = restrictions.value.maxNumberOfFiles
   if (maxNumberOfFiles && _files.length > maxNumberOfFiles) {
     _files.slice(maxNumberOfFiles).forEach((file) => {
       showMaxFilesNumberWarning(file, maxNumberOfFiles)
     })
-
     _files = _files.slice(0, maxNumberOfFiles)
   }
-
   files.value = files.value.concat(_files)
 }
-
 function checkRestrictions(file) {
   let { maxFileSize, allowedFileTypes = [] } = restrictions.value
-
   let isCorrectType = true
   let validFileSize = true
-
   if (allowedFileTypes && allowedFileTypes.length) {
     isCorrectType = allowedFileTypes.some((type) => {
       // is this is a mime-type
@@ -315,7 +283,6 @@ function checkRestrictions(file) {
         if (!file.type) return false
         return file.type.match(type)
       }
-
       // otherwise this is likely an extension
       if (type[0] === '.') {
         return file.name.toLowerCase().endsWith(type.toLowerCase())
@@ -323,11 +290,9 @@ function checkRestrictions(file) {
       return false
     })
   }
-
   if (maxFileSize && file.size != null) {
     validFileSize = file.size < maxFileSize
   }
-
   if (!isCorrectType) {
     console.warn('File skipped because of invalid file type', file)
     toast.warning(
@@ -343,10 +308,8 @@ function checkRestrictions(file) {
       ]),
     )
   }
-
   return isCorrectType && validFileSize
 }
-
 function showMaxFilesNumberWarning(file, maxNumberOfFiles) {
   console.warn(
     `File skipped because it exceeds the allowed specified limit of ${maxNumberOfFiles} uploads`,
@@ -362,14 +325,11 @@ function showMaxFilesNumberWarning(file, maxNumberOfFiles) {
       [file.name, maxNumberOfFiles, props.doctype],
     )
   }
-
   toast.warning(message)
 }
-
 function removeFile(name) {
   files.value = files.value.filter((file) => file.name !== name)
 }
-
 function fileIcon(type) {
   if (type?.startsWith('audio')) {
     return FileAudioIcon
@@ -378,13 +338,10 @@ function fileIcon(type) {
   }
   return FileTextIcon
 }
-
 watch(showCamera, (value) => {
   if (!value) stopStream()
 })
-
 onUnmounted(() => stopStream())
-
 defineExpose({
   showFileBrowser,
   showWebLink,

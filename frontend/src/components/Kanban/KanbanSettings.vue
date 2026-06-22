@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Button
     :label="__('Kanban settings')"
     v-bind="$attrs"
@@ -76,7 +76,7 @@
             <Button
               class="w-full mt-2"
               :label="__('Add Field')"
-              iconLeft="plus"
+              iconLeft="lucide-plus"
               @click="togglePopover()"
             />
           </template>
@@ -157,7 +157,7 @@ const columnFields = computed(() => {
 const { getFields } = getMeta(props.doctype)
 
 const fields = computed(() => {
-  const _fields = getFields({ withStandardFields: true }) || []
+  const _fields = getFields({ withStandardFields: true }).filter((f) => !f.hidden)
   if (!_fields.length) return []
 
   let existingFields = []

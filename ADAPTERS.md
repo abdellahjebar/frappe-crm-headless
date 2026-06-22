@@ -1,6 +1,6 @@
 # Adapter Guide
 
-An adapter is the only thing you need to write to connect CRM UI to your backend. It's a plain JavaScript object with two properties: `request` and `auth`.
+An adapter is the only thing you need to write to connect CRM UI to your backend. It's a plain JavaScript object with three required properties: `request`, `upload`, and `auth`.
 
 ---
 
@@ -15,15 +15,41 @@ interface Adapter {
     params?: object       // Query string parameters
   ): Promise<{ message: any }>
 
+  upload(
+    file: File,
+    options?: {
+      doctype?: string    // Linked DocType, e.g. 'CRM Lead'
+      docname?: string    // Linked document name
+      fieldname?: string  // Attach to a specific field
+      private?: boolean   // Default false (public)
+    }
+  ): Promise<{ name: string; file_url: string; file_name: string; is_private: number }>
+
   auth: {
     login(email: string, password: string): Promise<void>
     logout(): Promise<void>
     getUser(): string | null   // Returns current user email or null
   }
+
+  // Optional capabilities — omit any you don't need; the UI degrades gracefully.
+  realtime?: {
+    handleEvent(eventName: string, data: unknown): void  // Called by socket.js for each socket event
+  }
+  telemetry?: {
+    capture(event: string, data?: object): void          // Product analytics
+  }
+  onboarding?: {
+    complete(step: string): void                         // Onboarding step completion tracking
+  }
 }
 ```
 
-The `request` method must return `{ message: <your data> }`. This is the envelope frappe-ui expects. Everything else is up to you.
+**Required:** `request`, `upload`, `auth.login`, `auth.logout`, `auth.getUser`.  
+`setAdapter()` throws if any of these are missing.
+
+**Optional:** `realtime`, `telemetry`, `onboarding`. Omit the namespace entirely or implement only what you need — the UI silently skips any capability that isn't present. If you provide the namespace, the named method must exist or `setAdapter()` will warn.
+
+The `request` method must return `{ message: <your data> }`. This is the envelope the UI expects. Everything else is up to you.
 
 ---
 
@@ -68,6 +94,24 @@ export const ExpressAdapter = {
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
     const json = await res.json()
     return { message: json }
+  },
+
+  async upload(file, options = {}) {
+    const form = new FormData()
+    form.append('file', file, file.name)
+    if (options.doctype)   form.append('doctype',   options.doctype)
+    if (options.docname)   form.append('docname',   options.docname)
+    if (options.fieldname) form.append('fieldname', options.fieldname)
+    form.append('is_private', options.private ? '1' : '0')
+
+    const token = localStorage.getItem('crm_token')
+    const res = await fetch(`${BASE}/api/files`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    })
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.json()
   },
 
   auth: {
@@ -128,6 +172,24 @@ export const DjangoAdapter = {
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
     const json = await res.json()
     return { message: json }
+  },
+
+  async upload(file, options = {}) {
+    const form = new FormData()
+    form.append('file', file, file.name)
+    if (options.doctype)   form.append('doctype',   options.doctype)
+    if (options.docname)   form.append('docname',   options.docname)
+    if (options.fieldname) form.append('fieldname', options.fieldname)
+    form.append('is_private', options.private ? '1' : '0')
+
+    const res = await fetch(`${BASE}/api/files/`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'X-CSRFToken': getCsrfToken() },
+      body: form,
+    })
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.json()
   },
 
   auth: {
@@ -192,6 +254,27 @@ export const LaravelAdapter = {
     return { message: json }
   },
 
+  async upload(file, options = {}) {
+    const form = new FormData()
+    form.append('file', file, file.name)
+    if (options.doctype)   form.append('doctype',   options.doctype)
+    if (options.docname)   form.append('docname',   options.docname)
+    if (options.fieldname) form.append('fieldname', options.fieldname)
+    form.append('is_private', options.private ? '1' : '0')
+
+    const token = localStorage.getItem('crm_token')
+    const res = await fetch(`${BASE}/api/files`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: form,
+    })
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.json()
+  },
+
   auth: {
     async login(email, password) {
       const res = await fetch(`${BASE}/api/auth/login`, {
@@ -253,6 +336,24 @@ export const DotNetAdapter = {
     return { message: json }
   },
 
+  async upload(file, options = {}) {
+    const form = new FormData()
+    form.append('file', file, file.name)
+    if (options.doctype)   form.append('doctype',   options.doctype)
+    if (options.docname)   form.append('docname',   options.docname)
+    if (options.fieldname) form.append('fieldname', options.fieldname)
+    form.append('is_private', options.private ? '1' : '0')
+
+    const token = localStorage.getItem('crm_token')
+    const res = await fetch(`${BASE}/api/files`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    })
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.json()
+  },
+
   auth: {
     async login(email, password) {
       const res = await fetch(`${BASE}/api/auth/login`, {
@@ -305,6 +406,24 @@ export const SpringAdapter = {
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
     const json = await res.json()
     return { message: json }
+  },
+
+  async upload(file, options = {}) {
+    const form = new FormData()
+    form.append('file', file, file.name)
+    if (options.doctype)   form.append('doctype',   options.doctype)
+    if (options.docname)   form.append('docname',   options.docname)
+    if (options.fieldname) form.append('fieldname', options.fieldname)
+    form.append('is_private', options.private ? '1' : '0')
+
+    const token = localStorage.getItem('crm_token')
+    const res = await fetch(`${BASE}/api/files`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    })
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.json()
   },
 
   auth: {

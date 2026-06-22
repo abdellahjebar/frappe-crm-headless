@@ -1,16 +1,16 @@
-import { createDocumentResource } from 'frappe-ui'
+import { useQuery } from '@/composables/useQuery'
 import { reactive, ref } from 'vue'
 
 const settings = ref({})
 const brand = reactive({})
 
-const _settings = createDocumentResource({
-  doctype: 'FCRM Settings',
-  name: 'FCRM Settings',
+const _settings = useQuery({
+  url: 'frappe.client.get',
+  params: { doctype: 'FCRM Settings', name: 'FCRM Settings' },
+  auto: true,
   onSuccess: (data) => {
     settings.value = data
     getSettings().setupBrand()
-    return data
   },
 })
 

@@ -23,29 +23,23 @@
         />
       </div>
     </div>
-
     <!-- Assignment rules list -->
     <div class="flex h-full overflow-y-auto">
       <AssignmentRulesList />
     </div>
   </div>
 </template>
-
 <script setup>
 import AssignmentRulesList from './AssignmentRulesList.vue'
-import { createResource } from 'frappe-ui'
 import { inject, provide } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const updateStep = inject('updateStep')
-
-const assignmentRulesListData = createResource({
+const assignmentRulesListData = useQuery({
   url: 'crm.api.assignment_rule.get_assignment_rules_list',
   cache: ['assignmentRules', 'get_assignment_rules_list'],
   auto: true,
 })
-
 provide('assignmentRulesList', assignmentRulesListData)
-
 const goToNew = () => {
   updateStep('view', null)
 }

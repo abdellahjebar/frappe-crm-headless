@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Dialog v-model:open="show" :size="'xl'">
     <template #body-header>
       <div class="mb-6 flex items-center justify-between">
@@ -232,7 +232,6 @@ import EventNotifications from '@/components/Calendar/EventNotifications.vue'
 import Attendee from '@/components/Calendar/Attendee.vue'
 import {
   Switch,
-  TextEditor,
   ErrorMessage,
   Dialog,
   DatePicker,
@@ -240,6 +239,7 @@ import {
   dayjs,
   Dropdown,
 } from 'frappe-ui'
+import TextEditor from '@/components/TextEditor.vue'
 import { globalStore } from '@/stores/global'
 import { validateEmail } from '@/utils'
 import {

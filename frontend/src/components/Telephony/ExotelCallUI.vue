@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <div
       v-show="showSmallCallPopup"
@@ -119,7 +119,6 @@
             <div v-else>{{ __(callStatus) }}</div>
           </div>
         </div>
-
         <div class="flex">
           <Button
             class="bg-surface-gray-10 text-ink-base hover:bg-surface-gray-9 shrink-0 cursor-pointer"
@@ -201,7 +200,6 @@
             @click="openDealOrLead"
           />
         </div>
-
         <Button
           v-if="(note.name || task.name) && dirty"
           class="bg-surface-base !text-ink-gray-9 hover:!bg-surface-gray-3"
@@ -238,40 +236,34 @@ import CountUpTimer from '@/components/CountUpTimer.vue'
 import { globalStore } from '@/stores/global'
 import { sessionStore } from '@/stores/session'
 import { useDraggable, useWindowSize } from '@vueuse/core'
-import { TextEditor, Avatar, Button, createResource, toast } from 'frappe-ui'
+import { Avatar, Button, toast } from 'frappe-ui'
+import TextEditor from '@/components/TextEditor.vue'
 import { ref, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-
+import { useQuery } from '@/composables/useQuery'
 const { $socket } = globalStore()
-
 const callPopupHeader = ref(null)
 const showCallPopup = ref(false)
 let showSmallCallPopup = ref(false)
-
 function toggleCallPopup() {
   showCallPopup.value = !showCallPopup.value
   showSmallCallPopup.value = !showSmallCallPopup.value
 }
-
 const { width, height } = useWindowSize()
-
 let { style } = useDraggable(callPopupHeader, {
   initialValue: { x: width.value - 350, y: height.value - 250 },
   preventDefault: true,
 })
-
 const callStatus = ref('')
 const phoneNumber = ref('')
 const callData = ref(null)
 const counterUp = ref(null)
-
 const contact = ref({
   full_name: '',
   image: '',
   mobile_no: '',
 })
-
-const getContact = createResource({
+const getContact = useQuery({
   url: 'crm.integrations.api.get_contact_by_phone_number',
   makeParams() {
     return {
@@ -282,7 +274,6 @@ const getContact = createResource({
     contact.value = data
   },
 })
-
 watch(
   phoneNumber,
   (value) => {
@@ -291,16 +282,12 @@ watch(
   },
   { immediate: true },
 )
-
 const dirty = ref(false)
-
 const note = ref({
   name: '',
   content: '',
 })
-
 const showNote = ref(false)
-
 function showNoteWindow() {
   showNote.value = !showNote.value
   if (!showTask.value) {
@@ -310,9 +297,8 @@ function showNoteWindow() {
     showTask.value = false
   }
 }
-
 function createUpdateNote() {
-  createResource({
+  useQuery({
     url: 'crm.integrations.api.add_note_to_call_log',
     params: {
       call_sid: callData.value.CallSid,
@@ -327,7 +313,6 @@ function createUpdateNote() {
     },
   })
 }
-
 const task = ref({
   name: '',
   title: '',
@@ -337,9 +322,7 @@ const task = ref({
   status: 'Backlog',
   priority: 'Low',
 })
-
 const showTask = ref(false)
-
 function showTaskWindow() {
   showTask.value = !showTask.value
   if (!showNote.value) {
@@ -349,9 +332,8 @@ function showTaskWindow() {
     showNote.value = false
   }
 }
-
 function createUpdateTask() {
-  createResource({
+  useQuery({
     url: 'crm.integrations.api.add_task_to_call_log',
     params: {
       call_sid: callData.value.CallSid,
@@ -366,34 +348,26 @@ function createUpdateTask() {
     },
   })
 }
-
 watch([note, task], () => (dirty.value = true), { deep: true })
-
 function updateWindowHeight(condition) {
   let callPopup = callPopupHeader.value.parentElement
   let top = parseInt(callPopup.style.top)
   let updatedTop
-
   updatedTop = condition ? top - 224 : top + 224
-
   if (updatedTop < 0) {
     updatedTop = 10
   }
-
   callPopup.style.top = updatedTop + 'px'
 }
-
 function makeOutgoingCall(number) {
   phoneNumber.value = number
-
-  createResource({
+  useQuery({
     url: 'crm.integrations.exotel.handler.make_a_call',
     params: { to_number: phoneNumber.value },
     auto: true,
     onSuccess(callDetails) {
       callData.value = callDetails
       console.log(callDetails)
-
       callStatus.value = 'Calling...'
       showCallPopup.value = true
       showSmallCallPopup.value = false
@@ -403,15 +377,12 @@ function makeOutgoingCall(number) {
     },
   })
 }
-
 function setup() {
   $socket.on('exotel_call', (data) => {
     callData.value = data
     console.log(data)
-
     callStatus.value = updateStatus(data)
     const { user } = sessionStore()
-
     if (!showCallPopup.value && !showSmallCallPopup.value) {
       if (data.AgentEmail && data.AgentEmail == (user || user.value)) {
         // Incoming call
@@ -424,13 +395,10 @@ function setup() {
     }
   })
 }
-
 onBeforeUnmount(() => {
   $socket.off('exotel_call')
 })
-
 const router = useRouter()
-
 function openDealOrLead() {
   if (contact.value.deal) {
     router.push({
@@ -444,7 +412,6 @@ function openDealOrLead() {
     })
   }
 }
-
 function closeCallPopup() {
   showCallPopup.value = false
   showSmallCallPopup.value = false
@@ -462,19 +429,15 @@ function closeCallPopup() {
     priority: 'Low',
   }
 }
-
 function save() {
   if (note.value.content) createUpdateNote()
   if (task.value.title) createUpdateTask()
 }
-
 function update() {
   if (note.value.content) createUpdateNote()
   if (task.value.title) createUpdateTask()
 }
-
 const callDuration = ref('00:00')
-
 function updateStatus(data) {
   // outgoing call
   if (
@@ -516,7 +479,6 @@ function updateStatus(data) {
     )
     return 'Call ended'
   }
-
   // incoming call
   if (
     data.EventType == 'Dial' &&
@@ -543,7 +505,6 @@ function updateStatus(data) {
     return 'Call ended'
   }
 }
-
 defineExpose({ makeOutgoingCall, setup })
 </script>
 <style scoped>
@@ -558,11 +519,9 @@ defineExpose({ makeOutgoingCall, setup })
     opacity: 1;
   }
 }
-
 .blink {
   animation: blink 1s ease-in-out 6;
 }
-
 :deep(.ProseMirror) {
   caret-color: var(--ink-base);
 }

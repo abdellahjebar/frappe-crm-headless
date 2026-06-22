@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex justify-between gap-3 border-t px-4 py-2.5 sm:px-10">
     <div class="flex gap-1.5">
       <Button
@@ -22,7 +22,7 @@
     </div>
   </div>
   <div
-    v-show="showEmailBox"
+    v-if="showEmailBox"
     @keydown.ctrl.enter.capture.stop="submitEmail"
     @keydown.meta.enter.capture.stop="submitEmail"
   >
@@ -57,7 +57,7 @@
       "
     />
   </div>
-  <div v-show="showCommentBox">
+  <div v-if="showCommentBox">
     <CommentBox
       ref="newCommentEditor"
       v-model:content="newComment"
@@ -81,7 +81,6 @@
     />
   </div>
 </template>
-
 <script setup>
 import EmailEditor from '@/components/EmailEditor.vue'
 import CommentBox from '@/components/CommentBox.vue'
@@ -89,23 +88,21 @@ import CommentIcon from '@/components/Icons/CommentIcon.vue'
 import Email2Icon from '@/components/Icons/Email2Icon.vue'
 import { usersStore } from '@/stores/users'
 import { useStorage } from '@vueuse/core'
-import { useOnboarding, useTelemetry } from 'frappe-ui/frappe'
-import { call, createResource, toast } from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
+import { useOnboarding } from '@/composables/useOnboarding'
+import { toast } from 'frappe-ui'
+import { call } from '@/api/call'
 import { ref, watch, computed } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   doctype: { type: String, default: 'CRM Lead' },
 })
-
 const doc = defineModel({ type: Object, default: () => ({}) })
 const reload = defineModel('reload', { type: Boolean })
-
 const emit = defineEmits(['scroll'])
-
 const { getUser } = usersStore()
 const { updateOnboardingStep } = useOnboarding('frappecrm')
 const { capture } = useTelemetry()
-
 const showEmailBox = ref(false)
 const showCommentBox = ref(false)
 const newEmail = useStorage(
@@ -118,7 +115,6 @@ const newComment = useStorage(
 )
 const newEmailEditor = ref(null)
 const newCommentEditor = ref(null)
-
 const attachments = useStorage(
   `attachments-${getUser().email}-${props.doctype}-${doc.value.name}`,
   [],
@@ -130,7 +126,6 @@ const attachments = useStorage(
     },
   },
 )
-
 const subject = computed(() => {
   let prefix = ''
   if (doc.value?.lead_name) {
@@ -140,13 +135,11 @@ const subject = computed(() => {
   }
   return `${prefix} (#${doc.value.name})`
 })
-
-const signature = createResource({
+const signature = useQuery({
   url: 'crm.api.get_user_signature',
   cache: 'user-email-signature',
   auto: true,
 })
-
 function setSignature(editor) {
   if (!signature.data) return
   signature.data = signature.data.replace(/\n/g, '<br>')
@@ -157,7 +150,6 @@ function setSignature(editor) {
   editor.commands.setContent(signature.data + emailContent)
   editor.commands.focus('start')
 }
-
 watch(
   () => showEmailBox.value,
   (value) => {
@@ -168,7 +160,6 @@ watch(
     }
   },
 )
-
 watch(
   () => showCommentBox.value,
   (value) => {
@@ -177,11 +168,9 @@ watch(
     }
   },
 )
-
 const commentEmpty = computed(() => {
   return !newComment.value || newComment.value === '<p></p>'
 })
-
 const emailEmpty = computed(() => {
   return (
     !newEmail.value ||
@@ -189,14 +178,12 @@ const emailEmpty = computed(() => {
     !newEmailEditor.value?.toEmails?.length
   )
 })
-
 async function sendMail() {
   let fromEmail = newEmailEditor.value.fromEmail || getUser().email
   let recipients = newEmailEditor.value.toEmails
   let subject = newEmailEditor.value.subject
   let cc = newEmailEditor.value.ccEmails || []
   let bcc = newEmailEditor.value.bccEmails || []
-
   if (attachments.value.length) {
     capture('email_attachments_added')
   }
@@ -214,27 +201,22 @@ async function sendMail() {
     sender_full_name: getUser()?.full_name || undefined,
   })
 }
-
 async function sendComment() {
   let _attachments = attachments.value.length
     ? attachments.value.map((x) => x.name)
     : []
-
   let comment = await call('crm.api.comment.add_comment', {
     reference_doctype: props.doctype,
     reference_name: doc.value.name,
     content: newComment.value,
     attachments: _attachments,
   })
-
   if (comment && attachments.value.length) {
     capture('comment_attachments_added')
   }
 }
-
 async function deleteAttachedFiles() {
   if (!attachments.value || attachments.value.length === 0) return
-
   const deletePromises = attachments.value.map(async (file) => {
     try {
       await call('frappe.client.delete', {
@@ -245,12 +227,9 @@ async function deleteAttachedFiles() {
       console.warn(`Failed to delete file ${file.name}:`, error)
     }
   })
-
   await Promise.all(deletePromises)
-
   attachments.value = []
 }
-
 async function submitEmail() {
   if (emailEmpty.value) return
   showEmailBox.value = false
@@ -266,7 +245,6 @@ async function submitEmail() {
   capture('email_sent', { doctype: props.doctype })
   updateOnboardingStep('send_first_email')
 }
-
 async function submitComment() {
   if (commentEmpty.value) return
   showCommentBox.value = false
@@ -282,21 +260,18 @@ async function submitComment() {
   capture('comment_sent', { doctype: props.doctype })
   updateOnboardingStep('add_first_comment')
 }
-
 function toggleEmailBox() {
   if (showCommentBox.value) {
     showCommentBox.value = false
   }
   showEmailBox.value = !showEmailBox.value
 }
-
 function toggleCommentBox() {
   if (showEmailBox.value) {
     showEmailBox.value = false
   }
   showCommentBox.value = !showCommentBox.value
 }
-
 defineExpose({
   show: showEmailBox,
   showComment: showCommentBox,

@@ -83,7 +83,8 @@
 
 <script setup>
 import { computed, reactive, ref } from 'vue'
-import { call, toast } from 'frappe-ui'
+import { toast } from 'frappe-ui'
+import { call } from '@/api/call'
 import EmailProviderIcon from './EmailProviderIcon.vue'
 import {
   emailIcon,

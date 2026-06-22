@@ -1,10 +1,9 @@
-import { createResource } from 'frappe-ui'
-import { ref } from 'vue'
 
+import { ref } from 'vue'
+import { useQuery } from '@/composables/useQuery'
 export const whatsappEnabled = ref(false)
 export const isWhatsappInstalled = ref(false)
-
-createResource({
+useQuery({
   url: 'crm.api.whatsapp.is_whatsapp_enabled',
   cache: 'Is Whatsapp Enabled',
   auto: true,
@@ -12,8 +11,7 @@ createResource({
     whatsappEnabled.value = Boolean(data)
   },
 })
-
-createResource({
+useQuery({
   url: 'crm.api.whatsapp.is_whatsapp_installed',
   cache: 'Is Whatsapp Installed',
   auto: true,

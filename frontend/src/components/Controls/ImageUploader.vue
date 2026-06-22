@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <FileUploader
     :file-types="image_type"
     @success="(file) => emit('upload', file.file_url)"
@@ -6,7 +6,7 @@
     <template #default="{ progress, uploading, openFileSelector }">
       <div class="flex items-end space-x-1">
         <Button
-          :iconLeft="uploading ? 'cloud-upload' : ImageUpIcon"
+          :iconLeft="uploading ? 'lucide-cloud-upload' : ImageUpIcon"
           :label="
             uploading
               ? __('Uploading {0}%', [progress])

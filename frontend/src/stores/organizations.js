@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { createResource } from 'frappe-ui'
+import { useQuery } from '@/composables/useQuery'
 import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -8,7 +8,7 @@ export const organizationsStore = defineStore('crm-organizations', () => {
 
   const router = useRouter()
 
-  const organizations = createResource({
+  const organizations = useQuery({
     url: 'crm.api.session.get_organizations',
     cache: 'organizations',
     initialData: [],

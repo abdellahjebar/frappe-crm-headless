@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Dialog v-model:open="show" :size="'xl'">
     <template #body>
       <div class="px-4 pt-5 pb-6 bg-surface-elevation-2 sm:px-6">
@@ -47,7 +47,6 @@
     </template>
   </Dialog>
 </template>
-
 <script setup>
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
 import EditIcon from '@/components/Icons/EditIcon.vue'
@@ -56,11 +55,11 @@ import { isMobileView } from '@/composables/settings'
 import { showQuickEntryModal, quickEntryProps } from '@/composables/modals'
 import { useDocument } from '@/data/document'
 import { useDoctypeModal } from '@/composables/doctypeModal'
-import { useTelemetry } from 'frappe-ui/frappe'
-import { call, createResource } from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
 import { ref, nextTick, onMounted } from 'vue'
+import { useQuery } from '@/composables/useQuery'
 import { useRouter } from 'vue-router'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   data: { type: Object, default: () => ({}) },
   options: {
@@ -68,48 +67,39 @@ const props = defineProps({
     default: () => ({ redirect: true, afterInsert: () => {} }),
   },
 })
-
 const { isManager } = usersStore()
 const { capture } = useTelemetry()
-
 const router = useRouter()
 const show = defineModel({ type: Boolean })
-
 const loading = ref(false)
 const error = ref(null)
-
 const { document: organization, triggerOnBeforeCreate } =
   useDocument('CRM Organization')
-
+const insertOrg = useQuery({ url: 'frappe.client.insert' })
 async function createOrganization() {
   loading.value = true
   error.value = null
-
   await triggerOnBeforeCreate?.()
-
-  const doc = await call(
-    'frappe.client.insert',
-    {
+  let doc = null
+  try {
+    doc = await insertOrg.fetch({
       doc: {
         doctype: 'CRM Organization',
         ...organization.doc,
       },
-    },
-    {
-      onError: (err) => {
-        error.value = err.error?.messages?.[0]
-        loading.value = false
-      },
-    },
-  )
+    })
+  } catch (err) {
+    error.value = err.error?.messages?.[0] || err.message || 'Could not create organization'
+    loading.value = false
+    return
+  }
   loading.value = false
-  if (doc.name) {
+  if (doc?.name) {
     capture('organization_created')
     handleOrganizationUpdate(doc)
     organization.doc = {}
   }
 }
-
 function handleOrganizationUpdate(doc) {
   if (doc.name && props.options.redirect) {
     router.push({
@@ -120,8 +110,7 @@ function handleOrganizationUpdate(doc) {
   show.value = false
   props.options.afterInsert?.(doc)
 }
-
-const tabs = createResource({
+const tabs = useQuery({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_fields_layout',
   cache: ['QuickEntry', 'CRM Organization'],
   params: { doctype: 'CRM Organization', type: 'Quick Entry' },
@@ -147,20 +136,16 @@ const tabs = createResource({
     })
   },
 })
-
 onMounted(() => {
   organization.doc.no_of_employees = '1-10'
   Object.assign(organization.doc, props.data)
 })
-
 function openQuickEntryModal() {
   showQuickEntryModal.value = true
   quickEntryProps.value = { doctype: 'CRM Organization' }
   nextTick(() => (show.value = false))
 }
-
 const { showModal } = useDoctypeModal()
-
 function showAddressModal(_address) {
   showModal({
     name: _address || null,

@@ -5,6 +5,9 @@ import { ORGANIZATIONS } from './seed/organizations.js'
 import { USERS } from './seed/users.js'
 import { VIEWS } from './seed/views.js'
 import { NOTIFICATIONS } from './seed/notifications.js'
+import { NOTES } from './seed/notes.js'
+import { TASKS } from './seed/tasks.js'
+import { EVENTS } from './seed/events.js'
 
 // Deep-clone seed data so mutations never affect the originals
 function clone(obj) {
@@ -19,17 +22,25 @@ const store = {
   users: clone(USERS),
   views: clone(VIEWS),
   notifications: clone(NOTIFICATIONS),
-  counters: { leads: 25, deals: 15, contacts: 10, organizations: 8 },
+  notes: clone(NOTES),
+  tasks: clone(TASKS),
+  call_logs: [],
+  events: clone(EVENTS),
+  counters: { leads: 25, deals: 15, contacts: 10, organizations: 8, notes: 11, tasks: 12, call_logs: 0, events: 6 },
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function getCollection(doctype) {
+export function getCollection(doctype) {
   const map = {
     'CRM Lead': 'leads',
     'CRM Deal': 'deals',
     'Contact': 'contacts',
     'CRM Organization': 'organizations',
+    'FCRM Note': 'notes',
+    'CRM Task': 'tasks',
+    'CRM Call Log': 'call_logs',
+    'Event': 'events',
     'CRM Lead Status': null,
     'CRM Deal Status': null,
     'CRM Communication Status': null,
@@ -45,6 +56,10 @@ function generateName(doctype) {
     'CRM Deal': 'DEAL',
     'Contact': 'CONT',
     'CRM Organization': 'ORG',
+    'FCRM Note': 'NOTE',
+    'CRM Task': 'TASK',
+    'CRM Call Log': 'CALL',
+    'Event': 'EVT',
   }
   const prefix = prefixes[doctype] || 'DOC'
   const key = prefix.toLowerCase() + 's'
@@ -116,9 +131,10 @@ export function getData(doctype, options = {}) {
   records = applySort(records, options.order_by || 'modified desc')
 
   const total_count = records.length
-  const page_length = Number(options.page_length) || 20
-  const page = Number(options.page) || 1
-  const offset = (page - 1) * page_length
+  const page_length = Number(options.limit || options.page_length) || 20
+  const offset = options.limit_start != null
+    ? Number(options.limit_start)
+    : ((Number(options.page) || 1) - 1) * page_length
   const data = records.slice(offset, offset + page_length)
 
   return { data, total_count, row_count: data.length }
@@ -155,6 +171,17 @@ export function setValue(doctype, name, fieldname, value) {
   } else {
     record[fieldname] = value
   }
+  record.modified = now()
+  return record
+}
+
+export function saveDoc(doc) {
+  const col = getCollection(doc.doctype)
+  if (!col) throw new Error(`Unknown doctype: ${doc.doctype}`)
+  const record = col.find((r) => r.name === doc.name)
+  if (!record) throw new Error(`${doc.doctype} "${doc.name}" not found`)
+  const { doctype: _dt, name: _n, creation: _c, ...fields } = doc
+  Object.assign(record, fields)
   record.modified = now()
   return record
 }
@@ -242,4 +269,100 @@ export function getContactDeals(contactName) {
   return store.deals
     .filter((d) => d.contact === contactName)
     .map((d) => ({ name: d.name, deal_name: d.deal_name, status: d.status }))
+}
+
+export function getNotes(doctype, name) {
+  return store.notes.filter(
+    (n) => n.reference_doctype === doctype && n.reference_docname === name,
+  )
+}
+
+export function insertNote(note) {
+  store.counters.notes++
+  const newNote = {
+    ...note,
+    name: `NOTE-${String(store.counters.notes).padStart(4, '0')}`,
+    creation: now(),
+    modified: now(),
+  }
+  store.notes.push(newNote)
+  return newNote
+}
+
+export function updateNote(name, content) {
+  const note = store.notes.find((n) => n.name === name)
+  if (note) {
+    note.content = content
+    note.modified = now()
+  }
+  return note
+}
+
+export function deleteNote(name) {
+  const idx = store.notes.findIndex((n) => n.name === name)
+  if (idx !== -1) store.notes.splice(idx, 1)
+}
+
+export function getTasks(doctype, name) {
+  return store.tasks.filter(
+    (t) => t.reference_doctype === doctype && t.reference_docname === name,
+  )
+}
+
+export function insertTask(task) {
+  store.counters.tasks++
+  const newTask = {
+    ...task,
+    name: `TASK-${String(store.counters.tasks).padStart(4, '0')}`,
+    creation: now(),
+    modified: now(),
+  }
+  store.tasks.push(newTask)
+  return newTask
+}
+
+export function updateTask(name, patch) {
+  const task = store.tasks.find((t) => t.name === name)
+  if (task) Object.assign(task, patch, { modified: now() })
+  return task
+}
+
+export function deleteTask(name) {
+  const idx = store.tasks.findIndex((t) => t.name === name)
+  if (idx !== -1) store.tasks.splice(idx, 1)
+}
+
+export function getEvents(filters = []) {
+  let events = [...store.events]
+  for (const [field, op, value] of filters) {
+    if (op === '<=' && field === 'ends_on') {
+      events = events.filter((e) => e.ends_on <= value)
+    } else if (op === '>=' && field === 'starts_on') {
+      events = events.filter((e) => e.starts_on >= value)
+    }
+  }
+  return events
+}
+
+export function insertEvent(event) {
+  store.counters.events++
+  const newEvent = {
+    ...event,
+    name: `EVT-${String(store.counters.events).padStart(4, '0')}`,
+    creation: now(),
+    modified: now(),
+  }
+  store.events.push(newEvent)
+  return newEvent
+}
+
+export function updateEvent(name, patch) {
+  const event = store.events.find((e) => e.name === name)
+  if (event) Object.assign(event, patch, { modified: now() })
+  return event
+}
+
+export function deleteEvent(name) {
+  const idx = store.events.findIndex((e) => e.name === name)
+  if (idx !== -1) store.events.splice(idx, 1)
 }

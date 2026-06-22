@@ -78,6 +78,11 @@ function mapToREST(endpoint, data, params) {
         body: d.doc || d,
       }
 
+    case 'frappe.client.save': {
+      const doc = d.doc || d
+      return { method: 'PATCH', path: `/${dtPath(doc.doctype)}/${doc.name}`, body: doc }
+    }
+
     case 'frappe.client.set_value': {
       const dt = d.doctype || p.doctype
       const name = d.name || p.name
@@ -188,6 +193,20 @@ function mapToREST(endpoint, data, params) {
     case 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_sidepanel_sections':
       return { method: 'GET', path: `/${dtPath(d.doctype || p.doctype)}/layout/sidepanel` }
 
+    case 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.save_fields_layout':
+      return {
+        method: 'POST',
+        path: `/${dtPath(d.doctype || p.doctype)}/layout`,
+        body: { type: d.type || p.type, layout: d.layout || p.layout },
+      }
+
+    case 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.reset_fields_layout':
+      return {
+        method: 'DELETE',
+        path: `/${dtPath(d.doctype || p.doctype)}/layout`,
+        body: { type: d.type || p.type },
+      }
+
     // ── Views ─────────────────────────────────────────────────────────────────
     case 'crm.api.views.get_views':
       return { method: 'GET', path: '/views', query: { doctype: d.doctype || p.doctype } }
@@ -237,6 +256,19 @@ function mapToREST(endpoint, data, params) {
 
     case 'crm.api.contact.get_linked_deals':
       return { method: 'GET', path: `/contacts/${d.contact || p.contact}/deals` }
+
+    // ── Leads ─────────────────────────────────────────────────────────────────
+    case 'crm.fcrm.doctype.crm_lead.crm_lead.convert_to_deal':
+    case 'crm.api.doc.convert_lead_to_deal':
+      return {
+        method: 'POST',
+        path: `/leads/${d.lead || p.lead}/convert-to-deal`,
+        body: {
+          deal: d.deal || p.deal,
+          existing_contact: d.existing_contact || p.existing_contact,
+          existing_organization: d.existing_organization || p.existing_organization,
+        },
+      }
 
     // ── Deals ─────────────────────────────────────────────────────────────────
     case 'crm.fcrm.doctype.crm_deal.crm_deal.create_deal':
@@ -371,7 +403,7 @@ export const RESTAdapter = {
 
     const token = getToken()
     const res = await fetch(url.toString(), {
-      method: mapped.method,
+      method: mapped.method || method,
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -392,6 +424,33 @@ export const RESTAdapter = {
     const json = await res.json()
     const validated = validate(endpoint, json)
     return { message: validated }
+  },
+
+  /**
+   * Upload a file via multipart POST to /api/files.
+   * options: { doctype, docname, private, fieldname }
+   */
+  async upload(file, options = {}) {
+    const form = new FormData()
+    form.append('file', file, file.name)
+    if (options.doctype)   form.append('doctype',   options.doctype)
+    if (options.docname)   form.append('docname',   options.docname)
+    if (options.fieldname) form.append('fieldname', options.fieldname)
+    form.append('is_private', options.private ? '1' : '0')
+
+    const token = getToken()
+    const res = await fetch(`${config.backendUrl}/api/files`, {
+      method: 'POST',
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: form,
+    })
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }))
+      throw new Error(err.message || res.statusText)
+    }
+
+    return res.json()
   },
 
   auth: {

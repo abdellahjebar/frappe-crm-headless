@@ -1,5 +1,6 @@
 import { ref } from 'vue'
-import { call, toast } from 'frappe-ui'
+import { toast } from 'frappe-ui'
+import { call } from '@/api/call'
 
 export const showCreateDocumentModal = ref(false)
 export const createDocumentDoctype = ref('')

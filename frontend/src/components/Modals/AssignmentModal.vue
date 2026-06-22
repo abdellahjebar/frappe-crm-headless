@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Dialog
     v-model:open="show"
     :title="__('Assign To')"
@@ -94,8 +94,9 @@
 import UserAvatar from '@/components/UserAvatar.vue'
 import Link from '@/components/Controls/Link.vue'
 import { usersStore } from '@/stores/users'
-import { useTelemetry } from 'frappe-ui/frappe'
-import { Tooltip, call } from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
+import { Tooltip } from 'frappe-ui'
+import { call } from '@/api/call'
 import { ref, onMounted } from 'vue'
 
 const props = defineProps({

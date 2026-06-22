@@ -1,11 +1,9 @@
 import { globalStore } from '@/stores/global'
-import { createResource } from 'frappe-ui'
 import { ref } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const baseEndpoint = ref('https://frappecloud.com')
 const siteName = ref('')
-
-export const currentSiteInfo = createResource({
+export const currentSiteInfo = useQuery({
   url: 'frappe.integrations.frappe_providers.frappecloud_billing.current_site_info',
   cache: 'currentSiteInfo',
   onSuccess: (data) => {
@@ -13,12 +11,9 @@ export const currentSiteInfo = createResource({
     siteName.value = data.site_name
   },
 })
-
 export const confirmLoginToFrappeCloud = () => {
   currentSiteInfo.fetch()
-
   const { $dialog } = globalStore()
-
   $dialog({
     title: __('Login to Frappe Cloud?'),
     message: __(
@@ -36,7 +31,6 @@ export const confirmLoginToFrappeCloud = () => {
     ],
   })
 }
-
 const loginToFrappeCloud = () => {
   window.open(
     `${baseEndpoint.value}/dashboard/sites/${siteName.value}`,

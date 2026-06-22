@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="space-y-1.5 p-[2px] -m-[2px]">
     <label v-if="attrs.label" class="block" :class="labelClasses">
       {{ __(attrs.label) }}
@@ -17,15 +17,12 @@
       <template #target="{ open, togglePopover }">
         <slot name="target" v-bind="{ open, togglePopover }" />
       </template>
-
       <template #prefix>
         <slot name="prefix" />
       </template>
-
       <template #item-prefix="{ active, selected, option }">
         <slot name="item-prefix" v-bind="{ active, selected, option }" />
       </template>
-
       <template #item-label="{ active, selected, option }">
         <slot name="item-label" v-bind="{ active, selected, option }">
           <div v-if="option.description" class="flex flex-col gap-1">
@@ -41,14 +38,13 @@
           </div>
         </slot>
       </template>
-
       <template #footer="{ value: v, close }">
         <div v-if="attrs.onCreate">
           <Button
             variant="ghost"
             class="w-full !justify-start"
             :label="__('Create New')"
-            iconLeft="plus"
+            iconLeft="lucide-plus"
             @click="() => attrs.onCreate(v, close)"
           />
         </div>
@@ -57,7 +53,7 @@
             variant="ghost"
             class="w-full !justify-start"
             :label="__('Clear')"
-            iconLeft="x"
+            iconLeft="lucide-x"
             @click="() => clearValue(close)"
           />
         </div>
@@ -65,31 +61,24 @@
     </Autocomplete>
   </div>
 </template>
-
 <script setup>
 import Autocomplete from '@/components/frappe-ui/Autocomplete.vue'
 import { isTranslatable } from '@/utils'
 import { watchDebounced } from '@vueuse/core'
-import { createResource } from 'frappe-ui'
 import { useAttrs, computed, ref } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   doctype: { type: String, required: true },
   filters: { type: [Array, Object, String], default: () => [] },
   modelValue: { type: String, default: '' },
   hideMe: { type: Boolean, default: false },
 })
-
 const emit = defineEmits(['update:modelValue', 'change'])
-
 const attrs = useAttrs()
-
 const valuePropPassed = computed(() => 'value' in attrs)
-
 const value = computed({
   get: () => {
     let v = valuePropPassed.value ? attrs.value : props.modelValue
-
     if (isTranslatable(props.doctype)) return __(v)
     return v
   },
@@ -100,10 +89,8 @@ const value = computed({
     )
   },
 })
-
 const autocomplete = ref(null)
 const text = ref('')
-
 watchDebounced(
   () => autocomplete.value?.query,
   (val) => {
@@ -114,13 +101,11 @@ watchDebounced(
   },
   { debounce: 300, immediate: true },
 )
-
 watchDebounced(
   () => props.doctype,
   () => reload(''),
   { debounce: 300, immediate: true },
 )
-
 watchDebounced(
   () => props.filters,
   () => {
@@ -128,8 +113,7 @@ watchDebounced(
   },
   { debounce: 300, immediate: true },
 )
-
-const options = createResource({
+const options = useQuery({
   url: 'frappe.desk.search.search_link',
   cache: [props.doctype, text.value, props.hideMe, props.filters],
   method: 'POST',
@@ -155,7 +139,6 @@ const options = createResource({
     return allData
   },
 })
-
 function stripHtml(html) {
   if (!html) return ''
   return html
@@ -164,7 +147,6 @@ function stripHtml(html) {
     .replace(/\s+/g, ' ')
     .trim()
 }
-
 function reload(val, force = false) {
   if (!props.doctype) return
   if (
@@ -174,7 +156,6 @@ function reload(val, force = false) {
     props.doctype === options.params?.doctype
   )
     return
-
   options.update({
     params: {
       txt: val,
@@ -184,12 +165,10 @@ function reload(val, force = false) {
   })
   options.reload()
 }
-
 function clearValue(close) {
   emit(valuePropPassed.value ? 'change' : 'update:modelValue', '')
   close()
 }
-
 const labelClasses = computed(() => {
   return [
     {
@@ -199,6 +178,5 @@ const labelClasses = computed(() => {
     'text-ink-gray-5',
   ]
 })
-
 defineExpose({ reload })
 </script>

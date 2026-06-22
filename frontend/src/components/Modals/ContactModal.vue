@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Dialog v-model:open="show" :size="'xl'">
     <template #body>
       <div class="bg-surface-elevation-2 px-4 pb-6 pt-5 sm:px-6">
@@ -47,7 +47,6 @@
     </template>
   </Dialog>
 </template>
-
 <script setup>
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
 import EditIcon from '@/components/Icons/EditIcon.vue'
@@ -57,11 +56,10 @@ import { showQuickEntryModal, quickEntryProps } from '@/composables/modals'
 import { useDocument } from '@/data/document'
 import { evaluateDependsOnValue } from '@/utils'
 import { useDoctypeModal } from '@/composables/doctypeModal'
-import { useTelemetry } from 'frappe-ui/frappe'
-import { createResource } from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
 import { ref, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   contact: { type: Object, default: () => {} },
   options: {
@@ -69,22 +67,15 @@ const props = defineProps({
     default: () => ({ redirect: true, afterInsert: () => {} }),
   },
 })
-
 const { isManager } = usersStore()
 const { capture } = useTelemetry()
-
 const router = useRouter()
 const show = defineModel({ type: Boolean })
-
 const error = ref(null)
-
 const { document: _contact, triggerOnBeforeCreate } = useDocument('Contact')
-
 function validateRequiredFields() {
   if (!tabs.data) return null
-
   const missingFields = []
-
   tabs.data.forEach((tab) => {
     tab.sections.forEach((section) => {
       section.columns.forEach((column) => {
@@ -93,7 +84,6 @@ function validateRequiredFields() {
             field.reqd ||
             (field.mandatory_depends_on &&
               evaluateDependsOnValue(field.mandatory_depends_on, _contact.doc))
-
           if (isMandatory && !_contact.doc[field.fieldname]) {
             missingFields.push(__(field.label))
           }
@@ -101,26 +91,21 @@ function validateRequiredFields() {
       })
     })
   })
-
   if (missingFields.length) {
     return __('{0} is required', [missingFields.join(', ')])
   }
-
   if (_contact.doc.email_id && !_contact.doc.email_id.includes('@')) {
     return __('Invalid Email Address')
   }
-
   if (
     _contact.doc.mobile_no &&
     isNaN(_contact.doc.mobile_no.replace(/[-+() ]/g, ''))
   ) {
     return __('Mobile No. should be a number')
   }
-
   return null
 }
-
-const insertContact = createResource({
+const insertContact = useQuery({
   url: 'frappe.client.insert',
   onSuccess: (doc) => {
     capture('contact_created')
@@ -131,32 +116,26 @@ const insertContact = createResource({
     error.value = err.error?.messages?.[0]
   },
 })
-
 async function createContact() {
   error.value = null
-
   const validationError = validateRequiredFields()
   if (validationError) {
     error.value = validationError
     return
   }
-
   if (_contact.doc.email_id) {
     _contact.doc.email_ids = [
       { email_id: _contact.doc.email_id, is_primary: 1 },
     ]
     delete _contact.doc.email_id
   }
-
   if (_contact.doc.mobile_no) {
     _contact.doc.phone_nos = [
       { phone: _contact.doc.mobile_no, is_primary_mobile_no: 1 },
     ]
     delete _contact.doc.mobile_no
   }
-
   await triggerOnBeforeCreate?.()
-
   insertContact.submit({
     doc: {
       doctype: 'Contact',
@@ -164,7 +143,6 @@ async function createContact() {
     },
   })
 }
-
 function handleContactUpdate(doc) {
   props.contact?.reload?.()
   if (doc.name && props.options.redirect) {
@@ -176,8 +154,7 @@ function handleContactUpdate(doc) {
   show.value = false
   props.options.afterInsert?.(doc)
 }
-
-const tabs = createResource({
+const tabs = useQuery({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_fields_layout',
   cache: ['QuickEntry', 'Contact'],
   params: { doctype: 'Contact', type: 'Quick Entry' },
@@ -210,20 +187,16 @@ const tabs = createResource({
     })
   },
 })
-
 onMounted(() => {
   _contact.doc = {}
   Object.assign(_contact.doc, props.contact.data || props.contact)
 })
-
 function openQuickEntryModal() {
   showQuickEntryModal.value = true
   quickEntryProps.value = { doctype: 'Contact' }
   nextTick(() => (show.value = false))
 }
-
 const { showModal } = useDoctypeModal()
-
 function showAddressModal(_address) {
   showModal({
     name: _address || null,
@@ -237,7 +210,6 @@ function showAddressModal(_address) {
   })
 }
 </script>
-
 <style scoped>
 :deep(:has(> .dropdown-button)) {
   width: 100%;

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Dialog v-model:open="show" :title="__('Bulk Edit')">
     <template #default>
       <div class="mb-4">
@@ -32,39 +32,29 @@
     </template>
   </Dialog>
 </template>
-
 <script setup>
 import Link from '@/components/Controls/Link.vue'
 import Autocomplete from '@/components/frappe-ui/Autocomplete.vue'
-import { useTelemetry } from 'frappe-ui/frappe'
-import {
-  FormControl,
-  call,
-  createResource,
-  TextEditor,
-  DatePicker,
-} from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
+import { FormControl, DatePicker } from 'frappe-ui'
+import { call } from '@/api/call'
+import TextEditor from '@/components/TextEditor.vue'
 import { ref, computed, onMounted, h } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const typeCheck = ['Check']
 const typeLink = ['Link', 'Dynamic Link']
 const typeNumber = ['Float', 'Int', 'Currency', 'Percent']
 const typeSelect = ['Select']
 const typeEditor = ['Text Editor']
 const typeDate = ['Date', 'Datetime']
-
 const props = defineProps({
   doctype: { type: String, required: true },
   selectedValues: { type: Set, required: true },
 })
-
 const show = defineModel({ type: Boolean })
-
 const emit = defineEmits(['reload'])
-
 const { capture } = useTelemetry()
-
-const fields = createResource({
+const fields = useQuery({
   url: 'crm.api.doc.get_fields',
   cache: ['fields', props.doctype],
   params: {
@@ -74,24 +64,19 @@ const fields = createResource({
     return data.filter((f) => f.hidden == 0 && f.read_only == 0)
   },
 })
-
 onMounted(() => {
   if (fields.data?.length) return
   fields.fetch()
 })
-
 const recordCount = computed(() => props.selectedValues?.size || 0)
-
 const field = ref({
   label: '',
   fieldtype: '',
   fieldname: '',
   options: '',
 })
-
 const newValue = ref('')
 const loading = ref(false)
-
 function updateValues() {
   let fieldVal = newValue.value
   if (field.value.fieldtype == 'Check') {
@@ -122,22 +107,18 @@ function updateValues() {
     emit('reload')
   })
 }
-
 function changeField(f) {
   newValue.value = ''
   if (!f) return
   field.value = f
 }
-
 function updateValue(v) {
   let value = v.target ? v.target.value : v
   newValue.value = value
 }
-
 function getSelectOptions(options) {
   return options.split('\n')
 }
-
 function getValueComponent(f) {
   const { fieldtype, options } = f
   if (typeSelect.includes(fieldtype) || typeCheck.includes(fieldtype)) {

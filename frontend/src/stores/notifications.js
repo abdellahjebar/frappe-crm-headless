@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia'
-import { createResource } from 'frappe-ui'
+import { useQuery } from '@/composables/useQuery'
 import { computed, ref } from 'vue'
 
 export const visible = ref(false)
 
-export const notifications = createResource({
+export const notifications = useQuery({
   url: 'crm.api.notifications.get_notifications',
   initialData: [],
   auto: true,
@@ -15,7 +15,7 @@ export const unreadNotificationsCount = computed(
 )
 
 export const notificationsStore = defineStore('crm-notifications', () => {
-  const mark_as_read = createResource({
+  const mark_as_read = useQuery({
     url: 'crm.api.notifications.mark_as_read',
     onSuccess: () => {
       mark_as_read.params = {}

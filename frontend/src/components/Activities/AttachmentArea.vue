@@ -81,7 +81,8 @@ import FileAudioIcon from '@/components/Icons/FileAudioIcon.vue'
 import FileTextIcon from '@/components/Icons/FileTextIcon.vue'
 import FileVideoIcon from '@/components/Icons/FileVideoIcon.vue'
 import { globalStore } from '@/stores/global'
-import { call, Tooltip } from 'frappe-ui'
+import { Tooltip } from 'frappe-ui'
+import { call } from '@/api/call'
 import { formatDate, timeAgo, convertSize, isImage } from '@/utils'
 
 defineProps({

@@ -26,6 +26,26 @@ export const FrappeAdapter = {
     })
   },
 
+  /**
+   * Upload a file using Frappe's /api/method/upload_file endpoint.
+   * options: { doctype, docname, private, fieldname }
+   */
+  async upload(file, options = {}) {
+    const form = new FormData()
+    form.append('file', file, file.name)
+    if (options.doctype)  form.append('doctype',  options.doctype)
+    if (options.docname)  form.append('docname',  options.docname)
+    if (options.fieldname) form.append('fieldname', options.fieldname)
+    form.append('is_private', options.private ? '1' : '0')
+
+    const res = await frappeRequest({
+      url: 'upload_file',
+      method: 'POST',
+      body: form,
+    })
+    return res?.message ?? res
+  },
+
   auth: {
     /**
      * Log in using Frappe's cookie-based session.

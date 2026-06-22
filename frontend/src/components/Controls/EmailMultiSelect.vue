@@ -100,12 +100,10 @@
     </div>
   </div>
 </template>
-
 <script setup>
 // Generic multi-source (users / contacts / free) multi-select email-like input
 import UserAvatar from '@/components/UserAvatar.vue'
 import { usersStore } from '@/stores/users'
-import { createResource } from 'frappe-ui'
 import {
   ComboboxRoot,
   ComboboxAnchor,
@@ -118,7 +116,7 @@ import {
 } from 'reka-ui'
 import { ref, computed, nextTick } from 'vue'
 import { watchDebounced } from '@vueuse/core'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   // Behaviour
   mode: { type: String, default: null }, // 'users' | 'contacts' | 'free' (fallback to legacy flags)
@@ -136,10 +134,8 @@ const props = defineProps({
   placeholder: { type: String, default: '' },
   inputClass: { type: String, default: '' },
 })
-
 // v-model values
 const values = defineModel({ type: Array, default: () => [] })
-
 // Determine effective mode (backwards compatibility with old components)
 const effectiveMode = computed(() => {
   if (props.mode) return props.mode
@@ -147,7 +143,6 @@ const effectiveMode = computed(() => {
   if (props.fetchContacts) return 'contacts'
   return 'free'
 })
-
 // Common state
 const emails = ref([])
 const search = ref(null)
@@ -156,16 +151,13 @@ const info = ref(null)
 const query = ref('')
 const showOptions = ref(false)
 const tempSelection = ref(null)
-
 // Users data
 const { users } = usersStore()
-
 // Contacts resource (only if needed)
 const filterOptions = ref(null)
 const lastLoadedQuery = ref('')
-
 if (effectiveMode.value === 'contacts') {
-  filterOptions.value = createResource({
+  filterOptions.value = useQuery({
     url: 'crm.api.contact.search_emails',
     method: 'POST',
     cache: ['ContactEmails'],
@@ -183,7 +175,6 @@ if (effectiveMode.value === 'contacts') {
       return allData
     },
   })
-
   watchDebounced(
     query,
     (val) => {
@@ -195,13 +186,11 @@ if (effectiveMode.value === 'contacts') {
     { debounce: 300, immediate: true },
   )
 }
-
 function reload(val) {
   if (effectiveMode.value !== 'contacts' || !filterOptions.value) return
   filterOptions.value.update({ params: { txt: val } })
   filterOptions.value.reload()
 }
-
 // Options computed
 const options = computed(() => {
   const mode = effectiveMode.value
@@ -234,13 +223,11 @@ const options = computed(() => {
   // Free / manual mode
   return query.value ? [{ label: query.value, value: query.value }] : []
 })
-
 const showSearchIcon = computed(() => effectiveMode.value !== 'free')
 const emptyStateText = computed(() => {
   if (effectiveMode.value === 'free') return __(props.emptyPlaceholder)
   return options.value.length ? '' : __(props.emptyPlaceholder)
 })
-
 function addValue(input) {
   if (!input) return
   error.value = null
@@ -263,11 +250,9 @@ function addValue(input) {
     else values.value.push(email)
   }
 }
-
 function removeValue(value) {
   values.value = values.value.filter((v) => v !== value)
 }
-
 function removeLastValue() {
   if (query.value) return
   let emailRef = emails.value[emails.value.length - 1]?.rootRef
@@ -285,18 +270,14 @@ function removeLastValue() {
     emailRef?.focus()
   }
 }
-
 function setFocus() {
   search.value?.focus?.()
 }
-
 defineExpose({ setFocus })
-
 function onInput(e) {
   query.value = e.target.value
   showOptions.value = true
 }
-
 function onSelect(val) {
   if (!val) return
   addValue(val)
@@ -307,7 +288,6 @@ function onSelect(val) {
     nextTick(() => setFocus())
   }
 }
-
 function handleEnter() {
   if (query.value) onSelect(query.value)
 }

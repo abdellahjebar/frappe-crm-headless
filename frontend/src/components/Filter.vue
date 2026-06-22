@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Popover placement="bottom-end">
     <template #target="{ togglePopover, close }">
       <div class="flex items-center">
@@ -137,7 +137,7 @@
                   class="!text-ink-gray-5"
                   variant="ghost"
                   :label="__('Add Filter')"
-                  iconLeft="plus"
+                  iconLeft="lucide-plus"
                   @click="togglePopover()"
                 />
               </template>
@@ -161,17 +161,10 @@ import Link from '@/components/Controls/Link.vue'
 import Autocomplete from '@/components/frappe-ui/Autocomplete.vue'
 import DurationInput from '@/components/Controls/DurationInput.vue'
 import RatingInput from '@/components/Controls/RatingInput.vue'
-import {
-  FormControl,
-  createResource,
-  Popover,
-  DatePicker,
-  DateTimePicker,
-  DateRangePicker,
-} from 'frappe-ui'
+import { FormControl, Popover, DatePicker, DateTimePicker, DateRangePicker } from 'frappe-ui'
 import { h, computed, onMounted } from 'vue'
 import { isMobileView } from '@/composables/settings'
-
+import { useQuery } from '@/composables/useQuery'
 const typeCheck = ['Check']
 const typeLink = ['Link', 'Dynamic Link']
 const typeNumber = ['Float', 'Int', 'Currency', 'Percent']
@@ -180,27 +173,21 @@ const typeString = ['Data', 'Long Text', 'Small Text', 'Text Editor', 'Text']
 const typeDate = ['Date', 'Datetime']
 const typeDuration = ['Duration']
 const typeRating = ['Rating']
-
 const props = defineProps({
   doctype: { type: String, required: true },
   default_filters: { type: Object, default: () => {} },
 })
-
 const emit = defineEmits(['update'])
-
 const list = defineModel({ type: Object, default: () => ({}) })
-
-const filterableFields = createResource({
+const filterableFields = useQuery({
   url: 'crm.api.doc.get_filterable_fields',
   cache: ['filterableFields', props.doctype],
   params: { doctype: props.doctype },
 })
-
 onMounted(() => {
   if (filterableFields.data?.length) return
   filterableFields.fetch()
 })
-
 const filters = computed(() => {
   if (!list.value?.data) return new Set()
   let allFilters =
@@ -217,20 +204,16 @@ const filters = computed(() => {
   }
   return convertFilters(filterableFields.data, allFilters)
 })
-
 const availableFilters = computed(() => {
   if (!filterableFields.data) return []
-
   const selectedFieldNames = new Set()
   for (const filter of filters.value) {
     selectedFieldNames.add(filter.fieldname)
   }
-
   return filterableFields.data.filter(
     (field) => !selectedFieldNames.has(field.fieldname),
   )
 })
-
 function removeCommonFilters(commonFilters, allFilters) {
   for (const key in commonFilters) {
     if (Object.hasOwn(commonFilters, key) && Object.hasOwn(allFilters, key)) {
@@ -241,7 +224,6 @@ function removeCommonFilters(commonFilters, allFilters) {
   }
   return allFilters
 }
-
 function convertFilters(data, allFilters) {
   let f = []
   for (let [key, value] of Object.entries(allFilters)) {
@@ -252,7 +234,6 @@ function convertFilters(data, allFilters) {
         value = ['equals', value[1] ? 'Yes' : 'No']
       }
     }
-
     if (field) {
       f.push({
         field,
@@ -264,7 +245,6 @@ function convertFilters(data, allFilters) {
   }
   return new Set(f)
 }
-
 function getOperators(fieldtype, fieldname) {
   let options = []
   if (typeString.includes(fieldtype)) {
@@ -373,7 +353,6 @@ function getOperators(fieldtype, fieldname) {
   }
   return options
 }
-
 function getValueControl(f) {
   const { field, operator } = f
   const { fieldtype, options } = field
@@ -440,7 +419,6 @@ function getValueControl(f) {
     return h(FormControl, { type: 'text' })
   }
 }
-
 function getDefaultValue(field) {
   if (typeSelect.includes(field.fieldtype)) {
     return getSelectOptions(field.options)[0]
@@ -453,7 +431,6 @@ function getDefaultValue(field) {
   }
   return ''
 }
-
 function getDefaultOperator(fieldtype) {
   if (typeSelect.includes(fieldtype)) {
     return 'equals'
@@ -466,11 +443,9 @@ function getDefaultOperator(fieldtype) {
   }
   return 'like'
 }
-
 function getSelectOptions(options) {
   return options.split('\n')
 }
-
 function setfilter(data) {
   if (!data) return
   filters.value.add({
@@ -486,10 +461,8 @@ function setfilter(data) {
   })
   apply()
 }
-
 function updateFilter(data, index) {
   if (!data.fieldname) return
-
   filters.value.delete(Array.from(filters.value)[index])
   filters.value.add({
     fieldname: data.fieldname,
@@ -504,18 +477,15 @@ function updateFilter(data, index) {
   })
   apply()
 }
-
 function removeFilter(index) {
   filters.value.delete(Array.from(filters.value)[index])
   apply()
 }
-
 function clearfilter(close) {
   filters.value.clear()
   apply()
   close()
 }
-
 function updateValue(value, filter) {
   value = value.target ? value.target.value : value
   if (filter.operator === 'between') {
@@ -525,16 +495,13 @@ function updateValue(value, filter) {
   }
   apply()
 }
-
 function updateOperator(filter) {
   filter.value = getDefaultValue(filter.field)
-
   if (filter.operator === 'is' || filter.operator === 'is not') {
     filter.value = 'set'
   }
   apply()
 }
-
 function apply() {
   let _filters = []
   filters.value.forEach((f) => {
@@ -546,7 +513,6 @@ function apply() {
   })
   emit('update', parseFilters(_filters))
 }
-
 function parseFilters(filters) {
   const filtersArray = Array.from(filters)
   const obj = filtersArray.map(transformIn).reduce((p, c) => {
@@ -561,7 +527,6 @@ function parseFilters(filters) {
   const merged = { ...obj }
   return merged
 }
-
 function transformIn(f) {
   if (f.operator.includes('like') && !f.value.includes('%')) {
     f.value = `%${f.value}%`
@@ -571,7 +536,6 @@ function transformIn(f) {
   }
   return f
 }
-
 function placeholder(f) {
   if (f.operator === 'between') {
     return __('01/01/2022 to 01/31/2022')
@@ -604,7 +568,6 @@ function placeholder(f) {
   }
   return __('Enter Value')
 }
-
 const operatorMap = {
   is: 'is',
   'is not': 'is not',
@@ -623,7 +586,6 @@ const operatorMap = {
   between: 'between',
   timespan: 'timespan',
 }
-
 const oppositeOperatorMap = {
   is: 'is',
   '=': 'equals',
@@ -643,7 +605,6 @@ const oppositeOperatorMap = {
   between: 'between',
   timespan: 'timespan',
 }
-
 const timespanOptions = [
   {
     label: __('Last Week'),

@@ -61,27 +61,21 @@
     </template>
   </Dialog>
 </template>
-
 <script setup>
 import { showSettings, activeSettingsPage } from '@/composables/settings'
 import { useBroadcast } from '@/composables/useBroadcast'
-import { TextEditor, createListResource } from 'frappe-ui'
+import TextEditor from '@/components/TextEditor.vue'
 import { ref, computed, nextTick, watch, onMounted } from 'vue'
-
+import { useList } from '@/composables/useList'
 const props = defineProps({
   doctype: { type: String, default: '' },
 })
-
 const show = defineModel({ type: Boolean })
 const searchInput = ref('')
-
 const emit = defineEmits(['apply'])
-
 const { on, send } = useBroadcast()
-
 const search = ref('')
-
-const templates = createListResource({
+const templates = useList({
   type: 'list',
   doctype: 'Email Template',
   cache: ['emailTemplates', props.doctype],
@@ -100,7 +94,6 @@ const templates = createListResource({
   orderBy: 'modified desc',
   pageLength: 99999,
 })
-
 function create() {
   show.value = false
   showSettings.value = true
@@ -110,15 +103,12 @@ function create() {
     reference_doctype: props.doctype,
   })
 }
-
 on('refresh-email-templates', () => templates.reload())
-
 onMounted(() => {
   if (templates.data == null) {
     templates.fetch()
   }
 })
-
 const filteredTemplates = computed(() => {
   return (
     templates.data?.filter((template) => {
@@ -129,6 +119,5 @@ const filteredTemplates = computed(() => {
     }) ?? []
   )
 })
-
 watch(show, (value) => value && nextTick(() => searchInput.value?.el?.focus()))
 </script>

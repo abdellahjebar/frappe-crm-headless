@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <LayoutHeader v-if="organization.doc">
     <header
       class="relative flex h-10.5 items-center justify-between gap-2 py-2.5 pl-2"
@@ -73,7 +73,7 @@
                   :label="__('Delete')"
                   theme="red"
                   size="sm"
-                  iconLeft="trash-2"
+                  iconLeft="lucide-trash-2"
                   @click="deleteOrganization"
                 />
               </div>
@@ -149,7 +149,6 @@
     </Tabs>
   </div>
 </template>
-
 <script setup>
 import SidePanelLayout from '@/components/SidePanelLayout.vue'
 import Icon from '@/components/Icon.vue'
@@ -173,52 +172,36 @@ import {
   validateIsImageFile,
   openWebsite as openExternalWebsite,
 } from '@/utils'
-import {
-  Breadcrumbs,
-  Avatar,
-  FileUploader,
-  Dropdown,
-  Tabs,
-  call,
-  createListResource,
-  usePageMeta,
-  createResource,
-  toast,
-} from 'frappe-ui'
+import { Breadcrumbs, Avatar, FileUploader, Dropdown, Tabs, usePageMeta, toast } from 'frappe-ui'
+import { call } from '@/api/call'
 import { useDoctypeModal } from '@/composables/doctypeModal'
-import { useTelemetry } from 'frappe-ui/frappe'
+import { useTelemetry } from '@/composables/useTelemetry'
 import { h, computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-
+import { useQuery } from '@/composables/useQuery'
+import { useList } from '@/composables/useList'
 const props = defineProps({
   organizationId: { type: String, required: true },
 })
-
 const { brand } = getSettings()
 const { getUser } = usersStore()
 const { $dialog } = globalStore()
 const { getDealStatus } = statusesStore()
 const { doctypeMeta } = getMeta('CRM Organization')
 const { capture } = useTelemetry()
-
 const route = useRoute()
 const router = useRouter()
-
 const {
   document: organization,
   permissions,
   triggerOnRender,
 } = useDocument('CRM Organization', props.organizationId)
-
 const canDelete = computed(() => permissions.data?.permissions?.delete || false)
-
 onMounted(async () => {
   if (organization.doc) await triggerOnRender()
 })
-
 const breadcrumbs = computed(() => {
   let items = [{ label: __('Organizations'), route: { name: 'Organizations' } }]
-
   if (route.query.view || route.query.viewType) {
     let view = getView(
       route.query.view,
@@ -237,7 +220,6 @@ const breadcrumbs = computed(() => {
       })
     }
   }
-
   items.push({
     label: title.value,
     route: {
@@ -247,19 +229,16 @@ const breadcrumbs = computed(() => {
   })
   return items
 })
-
 const title = computed(() => {
   let t = doctypeMeta.value?.title_field || 'name'
   return organization.doc?.[t] || props.organizationId
 })
-
 usePageMeta(() => {
   return {
     title: title.value,
     icon: brand.favicon,
   }
 })
-
 async function changeOrganizationImage(file) {
   await call('frappe.client.set_value', {
     doctype: 'CRM Organization',
@@ -269,7 +248,6 @@ async function changeOrganizationImage(file) {
   })
   organization.reload()
 }
-
 async function deleteOrganization() {
   $dialog({
     title: __('Delete Organization'),
@@ -291,24 +269,20 @@ async function deleteOrganization() {
     ],
   })
 }
-
 function openWebsite() {
   if (!organization.doc.website) {
     toast.error(__('No Website Found'))
     return
   }
-
   openExternalWebsite(organization.doc.website)
 }
-
-const sections = createResource({
+const sections = useQuery({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_sidepanel_sections',
   cache: ['sidePanelSections', 'CRM Organization'],
   params: { doctype: 'CRM Organization' },
   auto: true,
   transform: (data) => getParsedSections(data),
 })
-
 function getParsedSections(_sections) {
   return _sections.map((section) => {
     section.columns = section.columns.map((column) => {
@@ -331,7 +305,6 @@ function getParsedSections(_sections) {
     return section
   })
 }
-
 const tabIndex = ref(0)
 const tabs = [
   {
@@ -352,8 +325,7 @@ const tabs = [
     count: computed(() => contacts.data?.length),
   },
 ]
-
-const deals = createListResource({
+const deals = useList({
   type: 'list',
   doctype: 'CRM Deal',
   cache: ['deals', props.organizationId],
@@ -375,8 +347,7 @@ const deals = createListResource({
   pageLength: 20,
   auto: true,
 })
-
-const contacts = createListResource({
+const contacts = useList({
   type: 'list',
   doctype: 'Contact',
   cache: ['contacts', props.organizationId],
@@ -396,23 +367,17 @@ const contacts = createListResource({
   pageLength: 20,
   auto: true,
 })
-
 const rows = computed(() => {
   let list = !tabIndex.value ? deals : contacts
-
   if (!list.data) return []
-
   return list.data.map((row) => {
     return !tabIndex.value ? getDealRowObject(row) : getContactRowObject(row)
   })
 })
-
 const { getFormattedCurrency } = getMeta('CRM Deal')
-
 const columns = computed(() => {
   return tabIndex.value === 0 ? dealColumns : contactColumns
 })
-
 function getDealRowObject(deal) {
   return {
     name: deal.name,
@@ -437,7 +402,6 @@ function getDealRowObject(deal) {
     },
   }
 }
-
 function getContactRowObject(contact) {
   return {
     name: contact.name,
@@ -458,7 +422,6 @@ function getContactRowObject(contact) {
     },
   }
 }
-
 const dealColumns = [
   {
     label: __('Organization'),
@@ -497,7 +460,6 @@ const dealColumns = [
     width: '8rem',
   },
 ]
-
 const contactColumns = [
   {
     label: __('Name'),
@@ -525,9 +487,7 @@ const contactColumns = [
     width: '8rem',
   },
 ]
-
 const { showModal } = useDoctypeModal()
-
 function showAddressModal(_address) {
   showModal({
     name: _address || null,

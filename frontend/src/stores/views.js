@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { createResource } from 'frappe-ui'
+import { useQuery } from '@/composables/useQuery'
 import { reactive, ref } from 'vue'
 
 export const viewsStore = defineStore('crm-views', (doctype) => {
@@ -14,7 +14,7 @@ export const viewsStore = defineStore('crm-views', (doctype) => {
   const defaultView = ref(null)
 
   // Views
-  const views = createResource({
+  const views = useQuery({
     url: 'crm.api.views.get_views',
     params: { doctype: doctype || '' },
     cache: 'crm-views',

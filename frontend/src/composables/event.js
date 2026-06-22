@@ -1,12 +1,11 @@
 import { usersStore } from '@/stores/users'
-import { dayjs, createListResource } from 'frappe-ui'
+import { dayjs } from 'frappe-ui'
 import { sameArrayContents } from '@/utils'
 import { computed, ref } from 'vue'
 import { allTimeSlots } from '@/components/Calendar/utils'
-
+import { useList } from '@/composables/useList'
 export const showEventModal = ref(false)
 export const activeEvent = ref(null)
-
 export function useEvent({
   doctype,
   docname,
@@ -15,7 +14,6 @@ export function useEvent({
   notifications = true,
 }) {
   const { getUser } = usersStore()
-
   if (!filters) {
     if (doctype && docname) {
       filters = {
@@ -26,8 +24,7 @@ export function useEvent({
       filters = {}
     }
   }
-
-  const eventsResource = createListResource({
+  const eventsResource = useList({
     doctype: 'Event',
     cache: ['calendar-events', docname],
     fields: [
@@ -52,23 +49,19 @@ export function useEvent({
     limit: 50,
     orderBy: 'creation desc',
   })
-
-  const eventParticipantsResource = createListResource({
+  const eventParticipantsResource = useList({
     doctype: 'Event Participants',
     fields: ['*'],
     parent: 'Event',
   })
-
-  const eventNotificationsResource = createListResource({
+  const eventNotificationsResource = useList({
     doctype: 'Event Notifications',
     fields: ['*'],
     parent: 'Event',
   })
-
   const events = computed(() => {
     if (!eventsResource.data) return []
     const eventNames = eventsResource.data.map((e) => e.name)
-
     // participants
     if (participants) {
       if (
@@ -91,13 +84,11 @@ export function useEvent({
               name: event.owner,
             }
           }
-
           event.event_participants = [
             ...eventParticipantsResource.data.filter(
               (participant) => participant.parent === event.name,
             ),
           ]
-
           event.participants = [
             event.owner,
             ...eventParticipantsResource.data
@@ -112,7 +103,6 @@ export function useEvent({
         })
       }
     }
-
     // notifications
     if (notifications) {
       if (!eventNotificationsResource.data?.length) {
@@ -133,27 +123,20 @@ export function useEvent({
         })
       }
     }
-
     return eventsResource.data
   })
-
   function eventsParticipantIsUpdated(eventNames) {
     const parentFilter = eventParticipantsResource.filters?.parent?.[1]
-
     if (eventNames.length && !sameArrayContents(parentFilter, eventNames))
       return true
-
     let d = eventsResource.setValue.data
     if (!d) return false
-
     let newParticipants = d.event_participants.map((p) => p.name)
     let oldParticipants = eventParticipantsResource.data
       .filter((p) => p.parent === d.name)
       .map((p) => p.name)
-
     return !sameArrayContents(newParticipants, oldParticipants)
   }
-
   const startEndTime = (
     startTime,
     endTime,
@@ -162,17 +145,13 @@ export function useEvent({
   ) => {
     const start = dayjs(startTime)
     const end = dayjs(endTime)
-
     if (isFullDay) return __('All Day')
-
     return `${start.format(format)} - ${end.format(format)}`
   }
-
   const startDate = (startTime, format = 'ddd, D MMM YYYY') => {
     const start = dayjs(startTime)
     return start.format(format)
   }
-
   return {
     eventsResource,
     eventParticipantsResource,
@@ -181,7 +160,6 @@ export function useEvent({
     startDate,
   }
 }
-
 export function normalizeParticipants(list = []) {
   const seen = new Set()
   const out = []
@@ -196,7 +174,6 @@ export function normalizeParticipants(list = []) {
   }
   return out
 }
-
 export function formatDuration(mins) {
   if (mins < 60) return __('{0} mins', [mins])
   let hours = mins / 60
@@ -208,7 +185,6 @@ export function formatDuration(mins) {
   }
   return `${hours} hrs`
 }
-
 export function buildEndTimeOptions(fromTime) {
   const timeSlots = allTimeSlots()
   if (!fromTime) return timeSlots
@@ -223,7 +199,6 @@ export function buildEndTimeOptions(fromTime) {
     return { ...o, label: `${o.label} (${formatDuration(duration)})` }
   })
 }
-
 export function computeAutoToTime(fromTime) {
   if (!fromTime) return ''
   const [hour, minute] = fromTime.split(':').map((n) => parseInt(n))
@@ -235,7 +210,6 @@ export function computeAutoToTime(fromTime) {
   }
   return `${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`
 }
-
 export function validateTimeRange({ fromDate, fromTime, toTime, isFullDay }) {
   if (isFullDay) return { valid: true, error: null }
   if (!fromTime || !toTime) {
@@ -251,11 +225,9 @@ export function validateTimeRange({ fromDate, fromTime, toTime, isFullDay }) {
   }
   return { valid: true, error: null }
 }
-
 export function parseEventDoc(doc) {
   if (!doc) return {}
   const { getUser } = usersStore()
-
   return {
     id: doc.name,
     title: doc.subject,

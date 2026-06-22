@@ -30,7 +30,6 @@
         />
       </div>
     </div>
-
     <div v-if="telephonyAgent.doc" class="flex-1 flex flex-col overflow-y-auto">
       <div class="flex items-center justify-between gap-8 py-3 pl-2 pr-1">
         <div class="flex flex-col">
@@ -136,14 +135,12 @@
           />
         </div>
       </div>
-
       <div
         v-if="isManager()"
         class="flex items-center justify-between text-lg-semibold text-ink-gray-8 mt-4 py-3 px-2"
       >
         {{ __('Integrations') }}
       </div>
-
       <div
         v-if="isManager()"
         class="flex items-center justify-between py-3 px-2"
@@ -165,12 +162,10 @@
           @click="emit('updateStep', 'twilio-settings')"
         />
       </div>
-
       <div
         v-if="isManager()"
         class="h-px border-t mx-2 border-outline-elevation-2"
       />
-
       <div
         v-if="isManager()"
         class="flex items-center justify-between py-3 px-2"
@@ -199,26 +194,16 @@
   </div>
 </template>
 <script setup>
-import {
-  FormControl,
-  Badge,
-  ErrorMessage,
-  createResource,
-  toast,
-} from 'frappe-ui'
+import { FormControl, Badge, ErrorMessage, toast } from 'frappe-ui'
 import { useTelephony } from '@/composables/telephony'
 import { useDocument } from '@/data/document'
 import { usersStore } from '@/stores/users'
 import { ref, computed } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const { isEnabled } = useTelephony()
-
 const emit = defineEmits(['updateStep'])
-
 const { getUser, isManager } = usersStore()
-
 const isNewDoc = ref(false)
-
 const { document: telephonyAgent } = useDocument(
   'CRM Telephony Agent',
   getUser().name,
@@ -232,8 +217,7 @@ const { document: telephonyAgent } = useDocument(
     },
   },
 )
-
-const insertResource = createResource({
+const insertResource = useQuery({
   url: 'frappe.client.insert',
   onSuccess: (data) => {
     isNewDoc.value = false
@@ -245,10 +229,8 @@ const insertResource = createResource({
     err.messages?.forEach((msg) => toast.error(msg))
   },
 })
-
 function update() {
   if (!isDirty.value) return
-
   if (isNewDoc.value) {
     insertResource.submit({
       doc: {
@@ -261,7 +243,6 @@ function update() {
     telephonyAgent.save.submit()
   }
 }
-
 const isDirty = computed(() => {
   return (
     telephonyAgent.doc &&

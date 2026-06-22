@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Dialog v-model:open="show" :size="'3xl'">
     <template #body>
       <div class="bg-surface-elevation-2 px-4 pb-6 pt-5 sm:px-6">
@@ -71,7 +71,6 @@
     </template>
   </Dialog>
 </template>
-
 <script setup>
 import EditIcon from '@/components/Icons/EditIcon.vue'
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
@@ -80,32 +79,26 @@ import { statusesStore } from '@/stores/statuses'
 import { isMobileView } from '@/composables/settings'
 import { showQuickEntryModal, quickEntryProps } from '@/composables/modals'
 import { useDocument } from '@/data/document'
-import { useTelemetry } from 'frappe-ui/frappe'
-import { Switch, createResource } from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
+import { Switch } from 'frappe-ui'
 import { computed, ref, onMounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   defaults: { type: Object, default: () => ({}) },
 })
-
 const { getUser, isManager } = usersStore()
 const { getDealStatus, statusOptions } = statusesStore()
-
 const show = defineModel({ type: Boolean })
 const router = useRouter()
 const error = ref(null)
-
 const { document: deal, triggerOnBeforeCreate } = useDocument('CRM Deal')
-
 const hasOrganizationSections = ref(true)
 const hasContactSections = ref(true)
-
 const isDealCreating = ref(false)
 const chooseExistingContact = ref(false)
 const chooseExistingOrganization = ref(false)
 const { capture } = useTelemetry()
-
 watch(
   [chooseExistingOrganization, chooseExistingContact],
   ([organization, contact]) => {
@@ -124,8 +117,7 @@ watch(
     })
   },
 )
-
-const tabs = createResource({
+const tabs = useQuery({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_fields_layout',
   cache: ['QuickEntry', 'CRM Deal'],
   params: { doctype: 'CRM Deal', type: 'Quick Entry' },
@@ -154,7 +146,6 @@ const tabs = createResource({
               field.options = dealStatuses.value
               field.prefix = getDealStatus(deal.doc.status).color
             }
-
             if (field.fieldtype === 'Table') {
               deal.doc[field.fieldname] = []
             }
@@ -164,9 +155,7 @@ const tabs = createResource({
     })
   },
 })
-
 const dealStatuses = computed(() => statusOptions('deal'))
-
 async function createDeal() {
   if (deal.doc.website && !deal.doc.website.startsWith('http')) {
     deal.doc.website = 'https://' + deal.doc.website
@@ -177,10 +166,8 @@ async function createDeal() {
     deal.doc['email'] = null
     deal.doc['mobile_no'] = null
   } else deal.doc['contact'] = null
-
   await triggerOnBeforeCreate?.()
-
-  createResource({
+  useQuery({
     url: 'crm.fcrm.doctype.crm_deal.crm_deal.create_deal',
     params: { doc: deal.doc },
     auto: true,
@@ -227,17 +214,14 @@ async function createDeal() {
     },
   })
 }
-
 function openQuickEntryModal() {
   showQuickEntryModal.value = true
   quickEntryProps.value = { doctype: 'CRM Deal' }
   nextTick(() => (show.value = false))
 }
-
 onMounted(() => {
   deal.doc.no_of_employees = '1-10'
   Object.assign(deal.doc, props.defaults)
-
   if (!deal.doc.deal_owner) {
     deal.doc.deal_owner = getUser().name
   }

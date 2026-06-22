@@ -142,42 +142,27 @@
     </template>
   </SettingsLayoutBase>
 </template>
-
 <script setup>
 import SettingsLayoutBase from '@/components/Layouts/SettingsLayoutBase.vue'
 import EmptyState from '@/components/ListViews/EmptyState.vue'
 import ShieldCheck from '~icons/lucide/shield-check'
-import {
-  Badge,
-  Button,
-  createResource,
-  Dialog,
-  Dropdown,
-  FormControl,
-  LoadingIndicator,
-  Switch,
-  toast,
-} from 'frappe-ui'
+import { Badge, Button, Dialog, Dropdown, FormControl, LoadingIndicator, Switch, toast } from 'frappe-ui'
 import { ConfirmDelete } from '@/utils'
 import { resetSlaData } from './utils'
 import { inject, ref, watch } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const slaPolicyListResource = inject('slaPolicyListResource')
 const updateStep = inject('updateStep')
 const slaSearchQuery = inject('slaSearchQuery')
-
 function createNewSlaPolicy() {
   resetSlaData()
   updateStep('view', null)
 }
-
 const duplicateDialog = ref({
   show: false,
   name: '',
 })
-
 const isConfirmingDelete = ref(false)
-
 const dropdownOptions = (sla) => [
   {
     label: __('Duplicate'),
@@ -194,16 +179,15 @@ const dropdownOptions = (sla) => [
     isConfirmingDelete,
   }),
 ]
-
 const duplicate = (sla) => {
-  createResource({
+  useQuery({
     url: 'frappe.client.get',
     params: {
       doctype: 'CRM Service Level Agreement',
       name: sla.name,
     },
     onSuccess: (data) => {
-      createResource({
+      useQuery({
         url: 'frappe.client.insert',
         params: {
           doc: {
@@ -230,13 +214,11 @@ const duplicate = (sla) => {
     auto: true,
   })
 }
-
 const deleteSla = (sla) => {
   if (!isConfirmingDelete.value) {
     isConfirmingDelete.value = true
     return
   }
-
   slaPolicyListResource.delete.submit(sla.name, {
     onSuccess: () => {
       toast.success(__('SLA Policy Deleted'))
@@ -248,7 +230,6 @@ const deleteSla = (sla) => {
     },
   })
 }
-
 const onToggle = (sla) => {
   if (sla.default) {
     toast.error(__('SLA set as default cannot be disabled'))
@@ -266,7 +247,6 @@ const onToggle = (sla) => {
     },
   )
 }
-
 watch(slaSearchQuery, (newValue) => {
   slaPolicyListResource.filters = {
     name: ['like', `%${newValue}%`],

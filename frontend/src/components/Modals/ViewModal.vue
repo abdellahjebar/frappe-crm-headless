@@ -51,7 +51,7 @@
 
 <script setup>
 import IconPicker from '@/components/IconPicker.vue'
-import { call } from 'frappe-ui'
+import { call } from '@/api/call'
 import { ref, watch, nextTick } from 'vue'
 
 const props = defineProps({

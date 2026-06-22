@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex overflow-x-auto h-full">
     <Draggable
       v-if="columns"
@@ -159,7 +159,7 @@
           <Button
             class="w-full mt-2.5 mb-1 mr-5"
             :label="__('Add Column')"
-            iconLeft="plus"
+            iconLeft="lucide-plus"
             @click="togglePopover()"
           />
         </template>

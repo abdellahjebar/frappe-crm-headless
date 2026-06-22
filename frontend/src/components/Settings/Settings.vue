@@ -2,10 +2,11 @@
   <Dialog
     v-model:open="showSettings"
     :size="'5xl'"
-    :disableOutsideClickToClose="disableSettingModalOutsideClick"
+    bare
+    :dismissible="!disableSettingModalOutsideClick"
     @close="activeSettingsPage = ''"
   >
-    <template #body>
+    <template #default>
       <div class="flex h-[calc(100vh_-_8rem)] bg-surface-sidebar">
         <div
           class="flex flex-col m-1 rounded-l-lg w-56 shrink-0 bg-surface-sidebar overflow-y-auto"

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Popover>
     <template #target="{ isOpen, togglePopover }">
       <Button
@@ -39,7 +39,7 @@
             variant="ghost"
             class="w-full !justify-start"
             :label="__('Create New')"
-            iconLeft="plus"
+            iconLeft="lucide-plus"
             @click="create && create()"
           />
         </div>

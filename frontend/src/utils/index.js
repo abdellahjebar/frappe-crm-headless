@@ -79,11 +79,11 @@ export function getFormat(
 ) {
   if (!date && withDate) return ''
   let dateFormat =
-    window.sysdefaults.date_format
+    (window.sysdefaults?.date_format || 'yyyy-mm-dd')
       .replace('mm', 'MM')
       .replace('yyyy', 'YYYY')
-      .replace('dd', 'DD') || 'YYYY-MM-DD'
-  let timeFormat = window.sysdefaults.time_format || 'HH:mm:ss'
+      .replace('dd', 'DD')
+  let timeFormat = window.sysdefaults?.time_format || 'HH:mm:ss'
   format = format || 'ddd, MMM D, YYYY h:mm a'
 
   if (onlyDate) format = dateFormat
@@ -232,7 +232,8 @@ export function taskStatusOptions(action, data) {
   let options = ['Backlog', 'Todo', 'In Progress', 'Done', 'Canceled']
   let statusMeta = getMeta('CRM Task')
     .getFields()
-    ?.find((field) => field.fieldname == 'status')
+    .filter((f) => !f.hidden)
+    .find((field) => field.fieldname == 'status')
   if (statusMeta) {
     options = statusMeta.options
       .map((option) => option.value)
@@ -251,7 +252,8 @@ export function taskPriorityOptions(action, data) {
   let options = ['Low', 'Medium', 'High']
   let priorityMeta = getMeta('CRM Task')
     .getFields()
-    ?.find((field) => field.fieldname == 'priority')
+    .filter((f) => !f.hidden)
+    .find((field) => field.fieldname == 'priority')
   if (priorityMeta) {
     options = priorityMeta.options
       .map((option) => option.value)

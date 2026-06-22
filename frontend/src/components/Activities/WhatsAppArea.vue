@@ -1,4 +1,4 @@
-<!-- eslint-disable vue/no-v-html -->
+﻿<!-- eslint-disable vue/no-v-html -->
 <template>
   <div>
     <div
@@ -180,7 +180,6 @@
     </div>
   </div>
 </template>
-
 <script setup>
 import IconPicker from '@/components/IconPicker.vue'
 import CheckIcon from '@/components/Icons/CheckIcon.vue'
@@ -188,22 +187,18 @@ import DoubleCheckIcon from '@/components/Icons/DoubleCheckIcon.vue'
 import DocumentIcon from '@/components/Icons/DocumentIcon.vue'
 import ReactIcon from '@/components/Icons/ReactIcon.vue'
 import { formatDate, sanitizeHTML } from '@/utils'
-import { useTelemetry } from 'frappe-ui/frappe'
-import { Tooltip, Dropdown, createResource, toast } from 'frappe-ui'
+import { useTelemetry } from '@/composables/useTelemetry'
+import { Tooltip, Dropdown, toast } from 'frappe-ui'
 import { ref } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 defineProps({
   messages: { type: Array, default: () => [] },
 })
-
 const list = defineModel({ type: Object })
-
 const { capture } = useTelemetry()
-
 function openFileInAnotherTab(url) {
   window.open(url, '_blank')
 }
-
 function formatWhatsAppMessage(message) {
   // if message contains _text_, make it italic
   message = message.replace(/_(.*?)_/g, '<i>$1</i>')
@@ -223,15 +218,12 @@ function formatWhatsAppMessage(message) {
   message = message.replace(/\* (.*?)(?=\s*\*|$)/g, '<li>$1</li>')
   message = message.replace(/- (.*?)(?=\s*-|$)/g, '<li>$1</li>')
   message = message.replace(/(\d+)\. (.*?)(?=\s*(\d+)\.|$)/g, '<li>$2</li>')
-
   return sanitizeHTML(message)
 }
-
 const emoji = ref('')
 const reaction = ref(true)
-
 function reactOnMessage(name, emoji) {
-  createResource({
+  useQuery({
     url: 'crm.api.whatsapp.react_on_whatsapp_message',
     params: {
       emoji,
@@ -249,10 +241,8 @@ function reactOnMessage(name, emoji) {
     },
   })
 }
-
 const reply = defineModel('reply', { type: Object, default: () => ({}) })
 const replyMode = ref(false)
-
 function messageOptions(message) {
   return [
     {
@@ -275,11 +265,9 @@ function messageOptions(message) {
     // },
   ]
 }
-
 function scrollToMessage(name) {
   const element = document.getElementById(name)
   element.scrollIntoView({ behavior: 'smooth' })
-
   // Highlight the message
   element.classList.add('bg-yellow-100')
   setTimeout(() => {

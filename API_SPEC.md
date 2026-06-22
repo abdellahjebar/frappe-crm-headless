@@ -497,9 +497,9 @@ Query params: `doctype`, `query`, `filters` (optional JSON).
 
 ## Files
 
-### `POST /api/method/upload_file`
+### `POST /api/files`
 
-File uploads use multipart form data. This path is frappe-ui's default and is proxied to your backend automatically via Vite (dev) and Nginx (prod).
+File uploads use multipart form data. RESTAdapter and the backend implementation both use this path. (The Frappe default `/api/method/upload_file` is only used by FrappeAdapter internally.)
 
 ```
 Content-Type: multipart/form-data

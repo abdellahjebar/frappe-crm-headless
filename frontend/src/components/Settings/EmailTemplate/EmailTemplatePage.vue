@@ -14,21 +14,17 @@
     @updateStep="updateStep"
   />
 </template>
-
 <script setup>
 import NewEmailTemplate from './NewEmailTemplate.vue'
 import EditEmailTemplate from './EditEmailTemplate.vue'
 import EmailTemplates from './EmailTemplates.vue'
 import { useBroadcast } from '@/composables/useBroadcast'
-import { createListResource } from 'frappe-ui'
 import { provide, ref } from 'vue'
-
+import { useList } from '@/composables/useList'
 const step = ref('template-list')
 const template = ref(null)
-
 const { on } = useBroadcast()
-
-const templates = createListResource({
+const templates = useList({
   type: 'list',
   doctype: 'Email Template',
   cache: 'emailTemplates',
@@ -48,14 +44,11 @@ const templates = createListResource({
   orderBy: 'modified desc',
   pageLength: 20,
 })
-
 provide('templates', templates)
-
 function updateStep(newStep, data) {
   step.value = newStep
   template.value = data
 }
-
 on('email_template_page', (data) => {
   step.value = data.page
   template.value = data

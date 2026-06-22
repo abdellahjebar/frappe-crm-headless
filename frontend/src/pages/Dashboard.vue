@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex flex-col h-full overflow-hidden">
     <LayoutHeader>
       <template #left-header>
@@ -20,7 +20,7 @@
         <Button
           v-if="editing"
           :label="__('Chart')"
-          iconLeft="plus"
+          iconLeft="lucide-plus"
           @click="showAddChartModal = true"
         />
         <Button
@@ -40,7 +40,6 @@
         />
       </template>
     </LayoutHeader>
-
     <div class="p-5 pb-2 flex items-center gap-4">
       <Dropdown
         v-if="!showDatePicker"
@@ -116,7 +115,6 @@
         </template>
       </Link>
     </div>
-
     <div class="w-full overflow-y-scroll">
       <DashboardGrid
         v-if="!dashboardItems.loading && dashboardItems.data"
@@ -132,7 +130,6 @@
     v-model:items="dashboardItems.data"
   />
 </template>
-
 <script setup lang="ts">
 import AddChartModal from '@/components/Dashboard/AddChartModal.vue'
 import LucideRefreshCcw from '~icons/lucide/refresh-ccw'
@@ -146,45 +143,32 @@ import Link from '@/components/Controls/Link.vue'
 import { usersStore } from '@/stores/users'
 import { copy } from '@/utils'
 import { getLastXDays, formatter, formatRange } from '@/utils/dashboard'
-import {
-  usePageMeta,
-  createResource,
-  DateRangePicker,
-  Dropdown,
-  Tooltip,
-} from 'frappe-ui'
+import { usePageMeta, DateRangePicker, Dropdown, Tooltip } from 'frappe-ui'
 import { ref, reactive, computed, provide } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const { users, getUser, isManager, isAdmin } = usersStore()
-
 const editing = ref(false)
-
 const showDatePicker = ref(false)
 const datePickerRef = ref(null)
 const preset = ref('Last 30 Days')
 const showAddChartModal = ref(false)
-
 const filters = reactive({
   period: getLastXDays(),
   user: null,
 })
-
 const fromDate = computed(() => {
   if (!filters.period) return null
   return filters.period.split(',')[0]
 })
-
 const toDate = computed(() => {
   if (!filters.period) return null
   return filters.period.split(',')[1]
 })
-
 function updateFilter(key: string, value: unknown, callback?: () => void) {
   filters[key] = value
   callback?.()
   dashboardItems.reload()
 }
-
 const options = computed(() => [
   {
     group: 'Presets',
@@ -234,8 +218,7 @@ const options = computed(() => [
     },
   },
 ])
-
-const dashboardItems = createResource({
+const dashboardItems = useQuery({
   url: 'crm.api.dashboard.get_dashboard',
   makeParams() {
     return {
@@ -246,29 +229,23 @@ const dashboardItems = createResource({
   },
   auto: true,
 })
-
 const dirty = computed(() => {
   if (!editing.value) return false
   return JSON.stringify(dashboardItems.data) !== JSON.stringify(oldItems.value)
 })
-
 const oldItems = ref([])
-
 provide('fromDate', fromDate)
 provide('toDate', toDate)
 provide('filters', filters)
-
 function enableEditing() {
   editing.value = true
   oldItems.value = copy(dashboardItems.data)
 }
-
 function cancel() {
   editing.value = false
   dashboardItems.data = copy(oldItems.value)
 }
-
-const saveDashboard = createResource({
+const saveDashboard = useQuery({
   url: 'frappe.client.set_value',
   method: 'POST',
   onSuccess: () => {
@@ -276,14 +253,11 @@ const saveDashboard = createResource({
     editing.value = false
   },
 })
-
 function save() {
   const dashboardItemsCopy = copy(dashboardItems.data)
-
   dashboardItemsCopy.forEach((item: Record<string, unknown>) => {
     delete item.data
   })
-
   saveDashboard.submit({
     doctype: 'CRM Dashboard',
     name: 'Manager Dashboard',
@@ -291,9 +265,8 @@ function save() {
     value: JSON.stringify(dashboardItemsCopy),
   })
 }
-
 function resetToDefault() {
-  createResource({
+  useQuery({
     url: 'crm.api.dashboard.reset_to_default',
     auto: true,
     onSuccess: () => {
@@ -302,7 +275,6 @@ function resetToDefault() {
     },
   })
 }
-
 usePageMeta(() => {
   return { title: __('CRM Dashboard') }
 })
