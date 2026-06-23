@@ -51,25 +51,18 @@
 </template>
 <script setup>
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
-import {
-  createDocumentResource,
-  createResource,
-  LoadingIndicator,
-  Badge,
-  toast,
-  ErrorMessage,
-} from 'frappe-ui'
+import { useDoc } from '@/data/document'
+import { LoadingIndicator, Badge, toast, ErrorMessage } from 'frappe-ui'
 import { getRandom } from '@/utils'
 import { computed } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   doctype: { type: String, required: true },
   title: { type: String, default: '' },
   successMessage: { type: String, default: 'Updated Successfully' },
   back: { type: Function, default: null },
 })
-
-const fields = createResource({
+const fields = useQuery({
   url: 'crm.api.doc.get_fields',
   cache: ['fields', props.doctype],
   params: {
@@ -78,12 +71,9 @@ const fields = createResource({
   },
   auto: true,
 })
-
-const data = createDocumentResource({
+const data = useDoc({
   doctype: props.doctype,
   name: props.doctype,
-  fields: ['*'],
-  auto: true,
   setValue: {
     onSuccess: () => {
       toast.success(__(props.successMessage))
@@ -93,12 +83,10 @@ const data = createDocumentResource({
     },
   },
 })
-
 const tabs = computed(() => {
   if (!fields.data) return []
   let _tabs = []
   let fieldsData = fields.data
-
   if (fieldsData[0].type != 'Tab Break') {
     let _sections = []
     if (fieldsData[0].type != 'Section Break') {
@@ -109,7 +97,6 @@ const tabs = computed(() => {
     }
     _tabs.push({ name: 'first_tab', sections: _sections })
   }
-
   fieldsData.forEach((field) => {
     let last_tab = _tabs[_tabs.length - 1]
     let _sections = _tabs.length ? last_tab.sections : []
@@ -142,7 +129,6 @@ const tabs = computed(() => {
       last_column.fields.push(field)
     }
   })
-
   return _tabs
 })
 </script>

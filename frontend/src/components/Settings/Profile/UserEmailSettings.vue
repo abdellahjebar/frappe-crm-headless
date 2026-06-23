@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <SettingsLayoutBase v-if="user.doc">
     <template #title>
       <div class="flex gap-1 items-center">
@@ -98,7 +98,7 @@
                 class="!bg-surface-elevation-2"
                 variant="outline"
                 :label="__('Add Email')"
-                iconLeft="plus"
+                iconLeft="lucide-plus"
                 @click="togglePopover()"
               />
             </template>
@@ -119,30 +119,21 @@
 <script setup>
 import Autocomplete from '@/components/frappe-ui/Autocomplete.vue'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
-import {
-  Badge,
-  Button,
-  createDocumentResource,
-  createListResource,
-  TextEditor,
-  toast,
-} from 'frappe-ui'
+import { useDoc } from '@/data/document'
+import { Badge, Button, toast } from 'frappe-ui'
+import TextEditor from '@/components/TextEditor.vue'
 import { computed, inject } from 'vue'
-
+import { useList } from '@/composables/useList'
 const emit = defineEmits(['updateStep'])
-
 const { user: sessionUser } = inject('session')
-
-const user = createDocumentResource({ doctype: 'User', name: sessionUser })
-
-const emails = createListResource({
+const user = useDoc({ doctype: 'User', name: sessionUser })
+const emails = useList({
   doctype: 'Email Account',
   cache: 'Outgoing Email Accounts',
   fields: ['name', 'email_id'],
   filters: { enable_outgoing: 1 },
   auto: true,
 })
-
 const filteredEmails = computed(() => {
   if (!emails.data) return []
   const linkedEmails = user.doc.user_emails?.map((e) => e.email_id) || []
@@ -154,11 +145,7 @@ const filteredEmails = computed(() => {
     }))
     .filter((e) => !linkedEmails.includes(e.email))
 })
-
-const isDirty = computed(() => {
-  return JSON.stringify(user.doc) !== JSON.stringify(user.originalDoc)
-})
-
+const isDirty = computed(() => user.isDirty)
 function addEmail(email) {
   if (!user.doc.user_emails) {
     user.doc.user_emails = []
@@ -168,21 +155,19 @@ function addEmail(email) {
     email_id: email.email,
   })
 }
-
 function removeEmail(email) {
   user.doc.user_emails = user.doc.user_emails.filter(
     (e) => e.email_id !== email.email_id,
   )
 }
-
-function update() {
-  user.save.submit(null, {
-    onSuccess: () => {
-      toast.success(__('Email settings updated successfully'))
-    },
-  })
+async function update() {
+  try {
+    await user.save.submit()
+    toast.success(__('Email settings updated successfully'))
+  } catch {
+    // save.error is set on the resource; no additional feedback
+  }
 }
-
 useKeyboardShortcuts({
   ignoreTyping: false,
   shortcuts: [

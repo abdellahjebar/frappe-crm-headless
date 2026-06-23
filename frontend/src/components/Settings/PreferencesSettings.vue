@@ -81,7 +81,6 @@
     </template>
   </SettingsLayoutBase>
 </template>
-
 <script setup>
 import CRMLogo from '@/components/Icons/CRMLogo.vue'
 import ThemeSwitcher from '@/components/Settings/ThemeSwitcher.vue'
@@ -89,54 +88,37 @@ import SettingsLayoutBase from '@/components/Layouts/SettingsLayoutBase.vue'
 import Link from '@/components/Controls/Link.vue'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { getSettings } from '@/stores/settings'
-import {
-  Combobox,
-  Badge,
-  toast,
-  createResource,
-  createDocumentResource,
-} from 'frappe-ui'
+import { useDoc } from '@/data/document'
+import { Combobox, Badge, toast } from 'frappe-ui'
 import { ref, computed, inject } from 'vue'
-
+import { useQuery } from '@/composables/useQuery'
 const refreshRequired = ref(false)
-
 const { user: sessionUser } = inject('session')
-
 const { brand } = getSettings()
-const user = createDocumentResource({ doctype: 'User', name: sessionUser })
-
-function save() {
+const user = useDoc({ doctype: 'User', name: sessionUser })
+async function save() {
   refreshRequired.value =
     user.doc.language !== user.originalDoc?.language ||
     user.doc.time_zone !== user.originalDoc?.time_zone
-
-  user.save.submit(null, {
-    onSuccess: () => {
-      toast.success(__('Preferences Updated Successfully'))
-      if (refreshRequired.value) {
-        window.location.reload()
-      }
-    },
-    onError: (err) => {
-      toast.error(err.message + ': ' + err.messages[0])
-    },
-  })
+  try {
+    await user.save.submit()
+    toast.success(__('Preferences Updated Successfully'))
+    if (refreshRequired.value) {
+      window.location.reload()
+    }
+  } catch (err) {
+    toast.error(err.message + ': ' + err.messages[0])
+  }
 }
-
-const isDirty = computed(() => {
-  return JSON.stringify(user.doc) !== JSON.stringify(user.originalDoc)
-})
-
-const timeZones = createResource({
+const isDirty = computed(() => user.isDirty)
+const timeZones = useQuery({
   url: 'frappe.core.doctype.user.user.get_timezones',
   cache: 'TimeZones',
   auto: true,
 })
-
 function getTimezoneOptions() {
   return timeZones.data?.timezones.map((tz) => ({ label: tz, value: tz })) || []
 }
-
 useKeyboardShortcuts({
   ignoreTyping: false,
   shortcuts: [

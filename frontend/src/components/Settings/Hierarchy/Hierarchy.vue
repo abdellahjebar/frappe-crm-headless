@@ -40,14 +40,12 @@
         />
       </div>
     </div>
-
     <div
       v-if="fcrmSettings.loading && !fcrmSettings.doc"
       class="flex flex-1 items-center justify-center"
     >
       <LoadingIndicator class="size-6" />
     </div>
-
     <div
       v-else-if="!hierarchyEnabled"
       class="relative flex flex-1 w-full justify-center"
@@ -74,7 +72,6 @@
         </div>
       </div>
     </div>
-
     <div v-else class="flex-1 min-h-0 flex flex-col px-2">
       <div class="flex items-center gap-2 pt-0.5 pb-4">
         <TextInput
@@ -141,7 +138,6 @@
         </Tree>
       </div>
     </div>
-
     <Teleport to="body">
       <div
         v-if="dragLabel"
@@ -241,7 +237,6 @@
     </Dialog>
   </div>
 </template>
-
 <script setup>
 import EmptyState from '@/components/ListViews/EmptyState.vue'
 import HierarchyRow from './HierarchyRow.vue'
@@ -252,22 +247,12 @@ import { globalStore } from '@/stores/global'
 import { usersStore } from '@/stores/users'
 import LucideNetwork from '~icons/lucide/network'
 import LucideCircleQuestionMark from '~icons/lucide/circle-question-mark'
-import {
-  Button,
-  Dialog,
-  LoadingIndicator,
-  TextInput,
-  Tooltip,
-  Tree,
-  call,
-  createDocumentResource,
-  createListResource,
-  toast,
-} from 'frappe-ui'
+import { useDoc } from '@/data/document'
+import { Button, Dialog, LoadingIndicator, TextInput, Tooltip, Tree, toast } from 'frappe-ui'
+import { call } from '@/api/call'
 import { computed, ref } from 'vue'
-
+import { useList } from '@/composables/useList'
 const DOCTYPE = 'CRM Sales Hierarchy'
-
 const ROLE_RANK = {
   'Sales Manager': 0,
   'Sales User': 1,
@@ -276,34 +261,28 @@ const ROLE_LABEL = {
   'Sales Manager': __('Sales Manager'),
   'Sales User': __('Sales User'),
 }
-
 const { users: usersResource, getUserRole, isAdmin } = usersStore()
 const canEdit = computed(() => isAdmin())
 const { $dialog } = globalStore()
-
-const fcrmSettings = createDocumentResource({
+const fcrmSettings = useDoc({
   doctype: 'FCRM Settings',
   name: 'FCRM Settings',
-  auto: true,
   setValue: {
     onError(error) {
       toast.error(error?.messages?.[0] || __('Failed to update setting'))
     },
   },
 })
-
 const hierarchyEnabled = computed(
   () => !!fcrmSettings.doc?.enable_sales_hierarchy,
 )
-
-const nodes = createListResource({
+const nodes = useList({
   doctype: DOCTYPE,
   fields: ['name', 'user', 'full_name', 'reports_to', 'is_group'],
   orderBy: 'lft asc',
   pageLength: 0,
   auto: true,
 })
-
 function toggleEnable(currentlyEnabled) {
   if (currentlyEnabled) {
     $dialog({
@@ -335,26 +314,22 @@ function toggleEnable(currentlyEnabled) {
     )
   }
 }
-
 const search = ref('')
 const roleFilter = ref('All')
 const showAddDialog = ref(false)
 const dialogSelected = ref([])
 const saving = ref(false)
-
 const treeOptions = {
   rowHeight: '32px',
   indentWidth: '28px',
   defaultCollapsed: false,
 }
-
 function enrich(node) {
   const user =
     usersResource.data?.crmUsers?.find((x) => x.name === node.user) || {}
   const role = getUserRole(node.user) || 'Sales User'
   const role_rank = ROLE_RANK[role]
   if (role_rank == undefined) return
-
   return {
     ...node,
     full_name: user.full_name || node.full_name || node.user,
@@ -366,11 +341,9 @@ function enrich(node) {
     role_rank,
   }
 }
-
 const enrichedNodes = computed(() =>
   (nodes.data || []).map(enrich).filter(Boolean),
 )
-
 const tree = computed(() => {
   const byName = new Map(
     enrichedNodes.value.map((n) => [n.name, { ...n, children: [] }]),
@@ -385,7 +358,6 @@ const tree = computed(() => {
   }
   return roots
 })
-
 function matchesFilters(node) {
   const query = search.value.trim().toLowerCase()
   const matchSearch =
@@ -395,7 +367,6 @@ function matchesFilters(node) {
   const matchRole = roleFilter.value === 'All' || node.role === roleFilter.value
   return matchSearch && matchRole
 }
-
 function clearTree(node) {
   if (matchesFilters(node)) {
     return { ...node, children: node.children || [] }
@@ -408,26 +379,20 @@ function clearTree(node) {
   }
   return null
 }
-
 const visibleRoots = computed(() =>
   tree.value.map(clearTree).filter((n) => n !== null),
 )
-
 function getLastNode(list) {
   if (!list?.length) return null
   const last = list[list.length - 1]
   if (last.children?.length) return getLastNode(last.children)
   return last
 }
-
 const lastNodeName = computed(() => getLastNode(visibleRoots.value)?.name)
-
 const placedUserIds = computed(
   () => new Set(enrichedNodes.value.map((n) => n.user)),
 )
-
 const ALLOWED_ROLES = new Set(['Sales Manager', 'Sales User'])
-
 function getCandidates(parent) {
   const all = usersResource.data?.crmUsers || []
   const parentRank = parent?.role_rank ?? -1
@@ -450,11 +415,9 @@ function getCandidates(parent) {
       }
     })
 }
-
 const candidatesLoading = computed(
   () => !!(usersResource.loading || nodes.loading),
 )
-
 async function reparent(name, newParent) {
   try {
     await call('frappe.client.set_value', {
@@ -469,12 +432,10 @@ async function reparent(name, newParent) {
     toast.error(e?.messages?.[0] || __('Could not update report to'))
   }
 }
-
 function openAddDialog() {
   dialogSelected.value = []
   showAddDialog.value = true
 }
-
 async function bulkAdd(parent, userIds) {
   if (!userIds?.length) return false
   saving.value = true
@@ -514,7 +475,6 @@ async function bulkAdd(parent, userIds) {
     saving.value = false
   }
 }
-
 async function confirmBulkAdd() {
   const ok = await bulkAdd(null, dialogSelected.value)
   if (ok) {
@@ -522,21 +482,17 @@ async function confirmBulkAdd() {
     dialogSelected.value = []
   }
 }
-
 const { removeNode } = useRemoveNode({
   doctype: DOCTYPE,
   nodes,
   enrichedNodes,
 })
-
 const showRemoveDialog = ref(false)
 const removeTarget = ref(null)
 const removing = ref(null)
-
 const checkTargetChild = computed(() =>
   enrichedNodes.value.some((n) => n.reports_to === removeTarget.value?.name),
 )
-
 const unlinkCount = computed(() => {
   if (!removeTarget.value) return 0
   const queue = [removeTarget.value.name]
@@ -550,12 +506,10 @@ const unlinkCount = computed(() => {
   }
   return count
 })
-
 function openRemoveDialog(node) {
   removeTarget.value = node
   showRemoveDialog.value = true
 }
-
 async function confirmRemove(mode) {
   if (!removeTarget.value) return
   removing.value = mode
@@ -567,7 +521,6 @@ async function confirmRemove(mode) {
     removing.value = null
   }
 }
-
 const {
   handlers: dragHandlers,
   rowClasses,

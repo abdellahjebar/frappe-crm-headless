@@ -146,33 +146,30 @@
 <script setup>
 import Link from '@/components/Controls/Link.vue'
 import { getMeta } from '@/stores/meta'
-import { Select, Button, toast, createDocumentResource } from 'frappe-ui'
+import { useDoc } from '@/data/document'
+import { Select, Button, toast } from 'frappe-ui'
 import { computed } from 'vue'
 
 const { getFields } = getMeta('System Settings')
 
-const settings = createDocumentResource({
+const settings = useDoc({
   doctype: 'System Settings',
   name: 'System Settings',
 })
 
-const isDirty = computed(() => {
-  return JSON.stringify(settings.doc) !== JSON.stringify(settings.originalDoc)
-})
+const isDirty = computed(() => settings.isDirty)
 
-function updateSettings() {
-  settings.save.submit(null, {
-    onSuccess: () => {
-      toast.success(__('Settings updated successfully'))
-    },
-    onError(error) {
-      const message = error?.messages?.[0] || __('Failed to save settings')
-      toast.error(message)
-    },
-  })
+async function updateSettings() {
+  try {
+    await settings.save.submit()
+    toast.success(__('Settings updated successfully'))
+  } catch (error) {
+    const message = error?.messages?.[0] || __('Failed to save settings')
+    toast.error(message)
+  }
 }
 
-const fieldsMeta = computed(() => getFields() || [])
+const fieldsMeta = computed(() => getFields().filter((f) => !f.hidden))
 
 function getOptions(fieldname) {
   const field = fieldsMeta.value.find((f) => f.fieldname === fieldname)

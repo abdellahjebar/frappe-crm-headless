@@ -137,6 +137,7 @@ import SettingsLayoutBase from '@/components/Layouts/SettingsLayoutBase.vue'
 import ChangePasswordModal from '@/components/Modals/ChangePasswordModal.vue'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { validateIsImageFile } from '@/utils'
+import { useDoc } from '@/data/document'
 import {
   Avatar,
   TextInput,
@@ -144,14 +145,13 @@ import {
   LoadingIndicator,
   toast,
   Tooltip,
-  createDocumentResource,
 } from 'frappe-ui'
 import { ref, computed, inject, useTemplateRef, nextTick } from 'vue'
 
 const emit = defineEmits(['updateStep'])
 
 const { user: sessionUser } = inject('session')
-const user = createDocumentResource({ doctype: 'User', name: sessionUser })
+const user = useDoc({ doctype: 'User', name: sessionUser })
 
 const showChangePasswordModal = ref(false)
 const isHoveringRemove = ref(false)
@@ -178,25 +178,20 @@ function editFullName() {
   nextTick(() => fullNameRef.value?.el?.focus())
 }
 
-const isDirty = computed(() => {
-  return JSON.stringify(user.doc) !== JSON.stringify(user.originalDoc)
-})
+const isDirty = computed(() => user.isDirty)
 
-function save() {
+async function save() {
   if (!isDirty.value) {
     editName.value = false
     return
   }
-
-  user.save.submit(null, {
-    onSuccess: () => {
-      editName.value = false
-      toast.success(__('Profile Updated Successfully'))
-    },
-    onError: (err) => {
-      toast.error(err.message + ': ' + err.messages[0])
-    },
-  })
+  try {
+    await user.save.submit()
+    editName.value = false
+    toast.success(__('Profile Updated Successfully'))
+  } catch (err) {
+    toast.error(err.message + ': ' + err.messages[0])
+  }
 }
 
 function updateImage(fileUrl = '') {
