@@ -537,6 +537,102 @@ Fields:
 
 ---
 
+## Form Scripts
+
+Used by the scripting engine to inject per-doctype custom JS on lead/deal/contact/organization pages.
+
+### `GET /api/form-scripts/:doctype`
+
+```json
+[
+  {
+    "name": "FS-0001",
+    "dt": "CRM Lead",
+    "script": "class FormClass { setup() { this.field('status').set('hidden', true) } }"
+  }
+]
+```
+
+Return an empty array `[]` if your backend does not support form scripts.
+
+---
+
+## Permissions
+
+### `GET /api/permissions/:doctype`
+
+Returns per-field permission levels for the current user.
+
+```json
+{
+  "write_levels": [0, 1],
+  "read_levels": [0, 1, 2]
+}
+```
+
+Return `{ "write_levels": [0], "read_levels": [0] }` to grant full access to all fields.
+
+---
+
+## Comments
+
+### `POST /api/comments`
+
+```json
+// Request
+{
+  "reference_doctype": "CRM Lead",
+  "reference_name": "LEAD-0001",
+  "content": "<p>Following up tomorrow</p>"
+}
+
+// Response
+{ "name": "CMT-0001", "content": "...", "owner": "sales@example.com", "creation": "..." }
+```
+
+### `DELETE /api/comments/:name`
+
+---
+
+## Activities — Notes / Tasks / Events (CRUD)
+
+### `POST /api/notes`
+
+```json
+// Request
+{ "reference_doctype": "CRM Lead", "reference_name": "LEAD-0001", "title": "Call notes", "content": "..." }
+// Response — the created note
+{ "name": "NOTE-0001", ... }
+```
+
+### `PATCH /api/notes/:name`
+
+### `DELETE /api/notes/:name`
+
+### `POST /api/tasks`
+
+```json
+// Request
+{ "reference_doctype": "CRM Lead", "reference_name": "LEAD-0001", "title": "Send proposal", "date": "2024-02-01", "assigned_to": "sales@example.com" }
+```
+
+### `PATCH /api/tasks/:name`
+
+### `DELETE /api/tasks/:name`
+
+### `POST /api/events`
+
+```json
+// Request
+{ "subject": "Demo call", "starts_on": "2024-02-01 14:00:00", "ends_on": "2024-02-01 15:00:00", "event_participants": [{ "reference_doctype": "CRM Lead", "reference_docname": "LEAD-0001" }] }
+```
+
+### `PATCH /api/events/:name`
+
+### `DELETE /api/events/:name`
+
+---
+
 ## Call Logs
 
 ### `GET /api/call-logs/:name`
