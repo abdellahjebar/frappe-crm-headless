@@ -5,13 +5,146 @@ import { useAttachments } from '@/composables/useAttachments'
 import { showSettings, activeSettingsPage } from '@/composables/settings'
 import { runSequentially, parseAssignees, sanitizeText } from '@/utils'
 import { findMissingMandatory } from '@/utils/fieldTransforms'
-import { createDocumentResource, createResource, toast } from 'frappe-ui'
+import { toast } from 'frappe-ui'
+import { getAdapter } from '@/api'
+import { useQuery } from '@/composables/useQuery'
 import { ref, reactive, getCurrentInstance } from 'vue'
 
 const documentsCache = {}
 const controllersCache = {}
 const assigneesCache = {}
 const permissionsCache = {}
+
+// ─── Adapter-agnostic document resource ──────────────────────────────────────
+
+function msgOf(result) {
+  return Object.prototype.hasOwnProperty.call(result ?? {}, 'message')
+    ? result.message
+    : result
+}
+
+function makeDocResource({ doctype, name: docname, onSuccess, onError, setValue: setValueCbs }) {
+  const doc = reactive({ doctype })
+  // .get mirrors frappe-ui's createDocumentResource.get sub-resource.
+  // loadingRef is a separate ref so document.loading auto-unwraps to a boolean
+  // inside reactive() — callers use document.loading or document.get.loading.
+  const loadingRef = ref(true)
+  const get = reactive({ loading: true, error: null })
+  const originalDocRef = ref(null)
+
+  const save = reactive({
+    loading: false,
+    error: null,
+    async submit() {
+      save.loading = true
+      save.error = null
+      try {
+        const result = await getAdapter().request('POST', 'frappe.client.save', {
+          doc: { ...doc },
+        })
+        const saved = msgOf(result)
+        if (saved && typeof saved === 'object') {
+          Object.assign(doc, saved)
+          originalDocRef.value = JSON.parse(JSON.stringify({ ...doc }))
+        }
+      } catch (err) {
+        save.error = err
+        throw err
+      } finally {
+        save.loading = false
+      }
+    },
+  })
+
+  const setValue = reactive({
+    loading: false,
+    error: null,
+    // Accepts {fieldname, value} (single field) or {[field]: val, ...} (dict form).
+    // Optional second arg perCallCbs = { onSuccess?, onError? } for per-call overrides.
+    async submit(valuesOrPair = {}, perCallCbs = {}) {
+      setValue.loading = true
+      setValue.error = null
+      try {
+        let _fieldname, _value
+        if ('fieldname' in valuesOrPair) {
+          _fieldname = valuesOrPair.fieldname
+          _value = valuesOrPair.value
+        } else {
+          _fieldname = valuesOrPair
+          _value = undefined
+        }
+        const result = await getAdapter().request('POST', 'frappe.client.set_value', {
+          doctype, name: docname, fieldname: _fieldname, value: _value,
+        })
+        const updated = msgOf(result)
+        if (updated && typeof updated === 'object') {
+          Object.assign(doc, updated)
+          originalDocRef.value = JSON.parse(JSON.stringify({ ...doc }))
+        }
+        setValueCbs?.onSuccess?.()
+        perCallCbs?.onSuccess?.()
+      } catch (err) {
+        setValue.error = err
+        setValueCbs?.onError?.(err)
+        perCallCbs?.onError?.(err)
+        throw err
+      } finally {
+        setValue.loading = false
+      }
+    },
+  })
+
+  async function load() {
+    loadingRef.value = true
+    get.loading = true
+    get.error = null
+    try {
+      const result = await getAdapter().request('POST', 'frappe.client.get', {
+        doctype, name: docname,
+      })
+      const loaded = msgOf(result)
+      if (loaded && typeof loaded === 'object') {
+        Object.assign(doc, loaded)
+        originalDocRef.value = JSON.parse(JSON.stringify({ ...doc }))
+      }
+      onSuccess?.()
+    } catch (err) {
+      get.error = err
+      onError?.(err)
+    } finally {
+      loadingRef.value = false
+      get.loading = false
+    }
+  }
+
+  function reload() { return load() }
+
+  const resource = reactive({
+    doc,
+    get,
+    loading: loadingRef,  // auto-unwrapped → boolean; matches document.loading usage
+    save,
+    setValue,
+    reload,
+    fieldHtmlMap: {},
+    fieldPropertyOverrides: {},
+    fieldRuleOverrides: {},    // written by declarative rules watchEffect in script.js
+    virtualFields: [],   // { _sectionName, after?, ...fieldDef } — added via addField()
+    virtualSections: [], // { name, label, after, fields } — added via addSection()
+    get originalDoc() { return originalDocRef.value },
+    get isDirty() {
+      if (originalDocRef.value === null) return false
+      return JSON.stringify(doc) !== JSON.stringify(originalDocRef.value)
+    },
+  })
+
+  load()
+  return resource
+}
+
+export function useDoc(options) {
+  return makeDocResource(options)
+}
 
 export function useDocument(doctype, docname, resourceOverrides = {}) {
   if (typeof docname === 'number') docname = String(docname)
@@ -29,66 +162,40 @@ export function useDocument(doctype, docname, resourceOverrides = {}) {
 
   if (!documentsCache[doctype][docname || '']) {
     if (docname) {
-      documentsCache[doctype][docname] = createDocumentResource(
-        {
-          realtime: Boolean(vm?.$socket),
-          doctype: doctype,
-          name: docname,
-          onSuccess: async () => await setupFormScript(),
-          onError: (err) => {
-            error.value = err
-            if (err.exc_type === 'DoesNotExistError') {
-              toast.error(__(err.messages[0] || 'Document does not exist'))
-            }
-            if (err.exc_type === 'PermissionError') {
-              toast.error(
-                __(
-                  err.messages[0] ||
-                    'You do not have permission to access this document',
-                ),
-              )
-            }
-          },
-          setValue: {
-            onSuccess: () => {
-              triggerOnSave()
-              toast.success(__('Document updated successfully'))
-              processPendingDeletions()
-            },
-            onError: (err) => {
-              triggerOnError(err)
-
-              if (err.exc_type == 'MandatoryError') {
-                const fieldName = err.messages
-                  .map((msg) => {
-                    let arr = msg.split(': ')
-                    return arr[arr.length - 1].trim()
-                  })
-                  .join(', ')
-                toast.error(__('Mandatory field error: {0}', [fieldName]))
-                return
-              }
-
-              err.messages?.forEach((msg) => {
-                toast.error(msg)
-              })
-
-              if (err.messages?.length === 0) {
-                toast.error(__('An error occurred while updating the document'))
-              }
-
-              console.error(err)
-            },
-          },
-          ...resourceOverrides,
+      documentsCache[doctype][docname] = makeDocResource({
+        doctype,
+        name: docname,
+        onSuccess: async () => await setupFormScript(),
+        onError: (err) => {
+          error.value = err
+          toast.error(__(err.messages?.[0] || err.message || 'Could not load document'))
         },
-        vm,
-      )
+        setValue: {
+          onSuccess: () => {
+            triggerOnSave()
+            toast.success(__('Document updated successfully'))
+            processPendingDeletions()
+          },
+          onError: (err) => {
+            triggerOnError(err)
+            const msgs = err.messages
+            if (msgs?.length) {
+              msgs.forEach((msg) => toast.error(msg))
+            } else {
+              toast.error(__('An error occurred while updating the document'))
+            }
+            console.error(err)
+          },
+        },
+      })
       if (!documentsCache[doctype][docname].fieldHtmlMap) {
         documentsCache[doctype][docname].fieldHtmlMap = {}
       }
       if (!documentsCache[doctype][docname].fieldPropertyOverrides) {
         documentsCache[doctype][docname].fieldPropertyOverrides = {}
+      }
+      if (!documentsCache[doctype][docname].fieldRuleOverrides) {
+        documentsCache[doctype][docname].fieldRuleOverrides = {}
       }
 
       // Override the submit function to trigger validation before submitting
@@ -110,6 +217,7 @@ export function useDocument(doctype, docname, resourceOverrides = {}) {
       documentsCache[doctype][''] = reactive({
         doc: { __newDocument: true, doctype },
         fieldPropertyOverrides: {},
+        fieldRuleOverrides: {},
       })
       setupFormScript()
     }
@@ -118,7 +226,7 @@ export function useDocument(doctype, docname, resourceOverrides = {}) {
   assigneesCache[doctype] = assigneesCache[doctype] || {}
 
   if (!assigneesCache[doctype][docname || '']) {
-    assigneesCache[doctype][docname || ''] = createResource({
+    assigneesCache[doctype][docname || ''] = useQuery({
       url: 'crm.api.doc.get_assigned_users',
       cache: `assignees:${doctype}:${docname}`,
       auto: docname ? true : false,
@@ -133,7 +241,7 @@ export function useDocument(doctype, docname, resourceOverrides = {}) {
   permissionsCache[doctype] = permissionsCache[doctype] || {}
 
   if (!permissionsCache[doctype][docname || '']) {
-    permissionsCache[doctype][docname || ''] = createResource({
+    permissionsCache[doctype][docname || ''] = useQuery({
       url: 'frappe.client.get_doc_permissions',
       cache: `permissions:${doctype}:${docname}`,
       auto: docname ? true : false,

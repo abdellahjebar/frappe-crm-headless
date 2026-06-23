@@ -484,8 +484,12 @@ function parsedField(field) {
   // Clone to avoid mutating the cached layout data
   field = { ...field }
 
-  // Merge script property overrides
-  const overrides = document.fieldPropertyOverrides?.[field.fieldname]
+  // Merge overrides: rule is base layer, script wins on top.
+  const ruleOv = document.fieldRuleOverrides?.[field.fieldname]
+  const scriptOv = document.fieldPropertyOverrides?.[field.fieldname]
+  const overrides = (ruleOv || scriptOv)
+    ? { ...(ruleOv || {}), ...(scriptOv || {}) }
+    : null
   if (overrides) {
     Object.assign(field, overrides)
   }
@@ -558,8 +562,12 @@ async function fieldChange(value, df) {
 }
 
 function parsedSection(section, editButtonAdded) {
-  // Merge script property overrides for section
-  const overrides = document.fieldPropertyOverrides?.[section.name]
+  // Merge overrides: rule is base layer, script wins on top.
+  const ruleOv = document.fieldRuleOverrides?.[section.name]
+  const scriptOv = document.fieldPropertyOverrides?.[section.name]
+  const overrides = (ruleOv || scriptOv)
+    ? { ...(ruleOv || {}), ...(scriptOv || {}) }
+    : null
   if (overrides) {
     section = { ...section, ...overrides }
   }

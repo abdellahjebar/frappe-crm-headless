@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex flex-col gap-5.5">
     <div
       class="flex items-center justify-between gap-2 text-base bg-surface-gray-2 rounded py-2 px-2.5 overflow-x-auto max-w-full"
@@ -226,7 +226,7 @@
                           class="w-full !h-8 !bg-surface-elevation-2"
                           variant="outline"
                           :label="__('Add Field')"
-                          iconLeft="plus"
+                          iconLeft="lucide-plus"
                           @click="togglePopover()"
                         />
                       </div>
@@ -259,7 +259,7 @@
           class="w-full h-8"
           variant="subtle"
           :label="__('Add Section')"
-          iconLeft="plus"
+          iconLeft="lucide-plus"
           @click="
             tabs[tabIndex].sections.push({
               label: '',

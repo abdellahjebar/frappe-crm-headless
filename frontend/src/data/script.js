@@ -2,39 +2,36 @@ import { globalStore } from '@/stores/global'
 import { getMeta } from '@/stores/meta'
 import { getClassNames, createDocProxy } from '@/utils/scriptHelpers'
 import { renderFieldLayoutDialog } from '@/utils/renderFieldLayoutDialog'
-import { call, createListResource, toast } from 'frappe-ui'
-import { reactive } from 'vue'
+import { FieldProxy, SectionProxy, MultiProxy } from '@/utils/FieldProxy'
+import { evaluateRules } from '@/utils/ruleEval'
+import { toast } from 'frappe-ui'
+import { call } from '@/api/call'
+import { reactive, watchEffect } from 'vue'
 import router from '@/router'
-
+import { useList } from '@/composables/useList'
 const doctypeScripts = reactive({})
 const fileScriptModules = import.meta.glob('../doctypes/*/*.js')
 const fileScriptCache = {}
-
 async function loadFileScript(doctype, view) {
   const key = `${doctype}:${view}`
   if (key in fileScriptCache) return fileScriptCache[key]
-
   const slug = doctype.toLowerCase().replaceAll(' ', '_')
   const viewSlug = view.toLowerCase()
   const path = `../doctypes/${slug}/${viewSlug}.js`
-
   const loader = fileScriptModules[path]
   if (!loader) {
     fileScriptCache[key] = null
     return null
   }
-
   try {
     fileScriptCache[key] = await loader()
   } catch {
     fileScriptCache[key] = null
   }
-
   return fileScriptCache[key]
 }
-
 export function getScript(doctype, view = 'Form') {
-  const scripts = createListResource({
+  const scripts = useList({
     doctype: 'CRM Form Script',
     cache: ['Form Scripts', doctype, view],
     fields: ['name', 'dt', 'view', 'script'],
@@ -54,37 +51,29 @@ export function getScript(doctype, view = 'Form') {
       )
     },
   })
-
   if (!doctypeScripts[doctype] && !scripts.loading) {
     scripts.fetch()
   }
-
   async function setupScript(document, helpers = {}) {
     const [fileModule] = await Promise.all([
       loadFileScript(doctype, view),
       scripts.list.promise,
     ])
-
     const { $dialog, $socket } = globalStore()
-
     helpers.createDialog = $dialog
     helpers.toast = toast
     helpers.socket = $socket
     helpers.router = router
     helpers.call = call
     helpers.formDialog = renderFieldLayoutDialog
-
     helpers.throwError = (message) => {
       toast.error(message || __('An error occurred'))
       throw new Error(message || __('An error occurred'))
     }
-
     let scriptDefs = doctypeScripts[doctype]
     const hasFileScript = fileModule != null
     const hasDbScripts = scriptDefs && Object.keys(scriptDefs).length > 0
-
     if (!hasFileScript && !hasDbScripts) return null
-
     return setupMultipleFormControllers(
       fileModule,
       scriptDefs,
@@ -92,7 +81,6 @@ export function getScript(doctype, view = 'Form') {
       helpers,
     )
   }
-
   function setupMultipleFormControllers(
     fileModule,
     scriptStrings,
@@ -103,13 +91,10 @@ export function getScript(doctype, view = 'Form') {
     let parentInstanceIdx = null
     const doctypeName = doctype.replace(/\s+/g, '')
     const { doctypesMeta } = getMeta(doctype)
-
     function addController(FormClass, className) {
       setupHelperMethods(FormClass)
-
       let parentInstance = null
       let isChildDoctype = className !== doctypeName
-
       if (isChildDoctype) {
         if (!controllers.length) {
           console.error(
@@ -124,7 +109,6 @@ export function getScript(doctype, view = 'Form') {
       } else {
         parentInstanceIdx = controllers.length || 0
       }
-
       const instance = setupFormController(
         FormClass,
         doctypesMeta,
@@ -134,10 +118,8 @@ export function getScript(doctype, view = 'Form') {
         isChildDoctype,
       )
       instance._className = className
-
       controllers.push(instance)
     }
-
     if (fileModule) {
       try {
         for (const [name, exported] of Object.entries(fileModule)) {
@@ -151,14 +133,12 @@ export function getScript(doctype, view = 'Form') {
         )
       }
     }
-
     for (let scriptName in scriptStrings) {
       let script = scriptStrings[scriptName]?.script
       if (!script) continue
       try {
         const classNames = getClassNames(script)
         if (!classNames) continue
-
         classNames.forEach((className) => {
           const FormClass = evaluateFormClass(script, className, helpers)
           if (!FormClass) return
@@ -168,10 +148,8 @@ export function getScript(doctype, view = 'Form') {
         console.error(__('Failed to load form controller: {0}', [err]))
       }
     }
-
     return controllers
   }
-
   function setupFormController(
     FormClass,
     meta,
@@ -182,21 +160,31 @@ export function getScript(doctype, view = 'Form') {
   ) {
     document.actions = document.actions || []
     document.statuses = document.statuses || []
-
     let instance = new FormClass()
-
     // Store the original document context to be used by properties like 'actions'
     instance._originalDocumentContext = document
     instance._isChildDoctype = isChildDoctype
-
     for (const key in helpers) {
       instance[key] = helpers[key]
     }
-
     for (const key in document) {
       if (Object.hasOwn(document, key)) {
         instance[key] = document[key]
       }
+    }
+    // Declarative rules: re-evaluate whenever the doc changes.
+    // Each predicate accesses doc properties which Vue tracks as reactive deps,
+    // so the effect only re-runs when those specific properties change.
+    if (instance.rules && typeof instance.rules === 'object' && document.fieldRuleOverrides) {
+      const ruleOverrides = document.fieldRuleOverrides
+      instance._stopRulesWatch = watchEffect(() => {
+        const doc = getDoc()
+        if (!doc || !doc.doctype) return
+        const overrides = evaluateRules(instance.rules, doc)
+        for (const fieldname of Object.keys(overrides)) {
+          ruleOverrides[fieldname] = overrides[fieldname]
+        }
+      })
     }
 
     instance.getMeta = async (doctype) => {
@@ -206,44 +194,34 @@ export function getScript(doctype, view = 'Form') {
       }
       return meta[doctype]
     }
-
     const getDoc = () => document.doc
-
     if (isChildDoctype) {
       instance.doc = createDocProxy(getDoc, parentInstance, instance)
-
       if (!parentInstance._childInstances) {
         parentInstance._childInstances = []
       }
-
       parentInstance._childInstances.push(instance)
     } else {
       instance.doc = createDocProxy(getDoc, instance)
     }
-
     return instance
   }
-
   function setupHelperMethods(FormClass) {
     if (typeof FormClass.prototype.getRow !== 'function') {
       FormClass.prototype.getRow = function (parentField, idx) {
         idx = idx || this.currentRowIdx
-
         let dt = null
-
         if (this instanceof Array) {
           const { getFields } = getMeta(this.doc.doctype)
           let fields = getFields()
           let field = fields.find((f) => f.fieldname === parentField)
           dt = field?.options?.replace(/\s+/g, '')
-
           if (!idx && dt) {
             idx = this.find(
               (r) => (r._className || r.constructor.name) === dt,
             )?.currentRowIdx
           }
         }
-
         if (!this.doc[parentField]) {
           console.warn(
             __('⚠️ No data found for parent field: {0}', [parentField]),
@@ -251,7 +229,6 @@ export function getScript(doctype, view = 'Form') {
           return null
         }
         const row = this.doc[parentField].find((r) => r.idx === idx)
-
         if (!row) {
           console.warn(
             __('⚠️ No row found for idx: {0} in parent field: {1}', [
@@ -261,20 +238,16 @@ export function getScript(doctype, view = 'Form') {
           )
           return null
         }
-
         row.parent = row.parent || this.doc.name
-
         if (this instanceof Array && dt) {
           return createDocProxy(
             row,
             this.find((r) => (r._className || r.constructor.name) === dt),
           )
         }
-
         return createDocProxy(row, this)
       }
     }
-
     if (!Object.prototype.hasOwnProperty.call(FormClass.prototype, 'actions')) {
       Object.defineProperty(FormClass.prototype, 'actions', {
         configurable: true,
@@ -286,7 +259,6 @@ export function getScript(doctype, view = 'Form') {
             )
             return []
           }
-
           return this._originalDocumentContext.actions
         },
         set(newValue) {
@@ -308,7 +280,6 @@ export function getScript(doctype, view = 'Form') {
         },
       })
     }
-
     if (
       !Object.prototype.hasOwnProperty.call(FormClass.prototype, 'statuses')
     ) {
@@ -322,7 +293,6 @@ export function getScript(doctype, view = 'Form') {
             )
             return []
           }
-
           return this._originalDocumentContext.statuses
         },
         set(newValue) {
@@ -344,7 +314,6 @@ export function getScript(doctype, view = 'Form') {
         },
       })
     }
-
     if (typeof FormClass.prototype.setFieldHtml !== 'function') {
       FormClass.prototype.setFieldHtml = function (fieldname, html) {
         if (!this._originalDocumentContext) {
@@ -359,7 +328,6 @@ export function getScript(doctype, view = 'Form') {
         this._originalDocumentContext.fieldHtmlMap[fieldname] = html
       }
     }
-
     if (typeof FormClass.prototype.setFieldProperty !== 'function') {
       FormClass.prototype.setFieldProperty = function (
         target,
@@ -381,7 +349,6 @@ export function getScript(doctype, view = 'Form') {
         ctx.fieldPropertyOverrides[key][property] = value
       }
     }
-
     if (typeof FormClass.prototype.setFieldProperties !== 'function') {
       FormClass.prototype.setFieldProperties = function (
         target,
@@ -394,7 +361,6 @@ export function getScript(doctype, view = 'Form') {
         }
       }
     }
-
     if (typeof FormClass.prototype.removeFieldProperty !== 'function') {
       FormClass.prototype.removeFieldProperty = function (
         target,
@@ -410,42 +376,78 @@ export function getScript(doctype, view = 'Form') {
         }
       }
     }
-
     if (typeof FormClass.prototype.getField !== 'function') {
       FormClass.prototype.getField = function (fieldname) {
         const ctx = this._originalDocumentContext
         const dt = ctx?.doc?.doctype || ''
         if (!dt) return null
-
         const { doctypesMeta: allMeta } = getMeta(dt)
         const raw = allMeta[dt]?.fields?.find((f) => f.fieldname === fieldname)
         if (!raw) return null
-
         // Return a clone merged with any overrides
         const overrides = ctx?.fieldPropertyOverrides?.[fieldname] || {}
         return { ...raw, ...overrides }
       }
     }
+    if (typeof FormClass.prototype.addField !== 'function') {
+      FormClass.prototype.addField = function (sectionName, fieldDef) {
+        const ctx = this._originalDocumentContext
+        if (!ctx) {
+          console.warn('CRM Script: _originalDocumentContext not found on instance for addField.')
+          return
+        }
+        if (!fieldDef?.fieldname || !fieldDef?.fieldtype) {
+          console.warn('CRM Script: addField requires fieldname and fieldtype in fieldDef.')
+          return
+        }
+        if (!Array.isArray(ctx.virtualFields)) ctx.virtualFields = []
+        ctx.virtualFields.push({ _sectionName: sectionName, ...fieldDef })
+      }
+    }
+    if (typeof FormClass.prototype.addSection !== 'function') {
+      FormClass.prototype.addSection = function (sectionDef) {
+        const ctx = this._originalDocumentContext
+        if (!ctx) {
+          console.warn('CRM Script: _originalDocumentContext not found on instance for addSection.')
+          return
+        }
+        if (!sectionDef?.name) {
+          console.warn('CRM Script: addSection requires a name in sectionDef.')
+          return
+        }
+        if (!Array.isArray(ctx.virtualSections)) ctx.virtualSections = []
+        ctx.virtualSections.push({ ...sectionDef })
+      }
+    }
+    if (typeof FormClass.prototype.field !== 'function') {
+      FormClass.prototype.field = function (target, rowName) {
+        return new FieldProxy(this, target, rowName)
+      }
+    }
+    if (typeof FormClass.prototype.section !== 'function') {
+      FormClass.prototype.section = function (name) {
+        return new SectionProxy(this, name)
+      }
+    }
+    if (typeof FormClass.prototype.fields !== 'function') {
+      FormClass.prototype.fields = function (targets) {
+        return new MultiProxy(this, targets)
+      }
+    }
   }
-
   // getClassNames and createDocProxy are imported from '@/utils/scriptHelpers'
-
   function evaluateFormClass(script, className, helpers = {}) {
     const helperKeys = Object.keys(helpers)
     const helperValues = Object.values(helpers)
-
     const wrappedScript = `
 		${script}
 		return ${className};
 	`
-
     const FormClass = new Function(...helperKeys, wrappedScript)(
       ...helperValues,
     )
-
     return FormClass
   }
-
   return {
     scripts,
     setupScript,

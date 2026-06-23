@@ -48,7 +48,7 @@
       v-model="data[field.fieldname]"
       v-model:parent="data"
       :doctype="field.options"
-      :parentDoctype="doctype"
+      :parentDoctype="ctx.doctype"
       :parentFieldname="field.fieldname"
     />
     <FormControl
@@ -228,7 +228,7 @@
     <FormattedInput
       v-else-if="field.fieldtype === 'Currency'"
       type="text"
-      :value="getFormattedCurrency(field.fieldname, data, parentDoc)"
+      :value="getFormattedCurrency(field.fieldname, data, ctx.parentDoc)"
       :placeholder="getPlaceholder(field)"
       :disabled="Boolean(field.read_only)"
       :description="field.description"
@@ -261,7 +261,7 @@
     <AttachControl
       v-else-if="['Attach', 'Attach Image'].includes(field.fieldtype)"
       :value="data[field.fieldname]"
-      :doctype="doctype"
+      :doctype="ctx.doctype"
       :docname="data.name"
       :fieldname="field.fieldname"
       :imageOnly="field.fieldtype === 'Attach Image'"
@@ -293,6 +293,7 @@
     />
   </div>
 </template>
+
 <script setup>
 import Password from '@/components/Controls/Password.vue'
 import FormattedInput from '@/components/Controls/FormattedInput.vue'
@@ -324,6 +325,7 @@ import { getMeta } from '@/stores/meta'
 import { parseLinkFilters } from '@/utils/fieldTransforms'
 import { usersStore } from '@/stores/users'
 import { useDocument } from '@/data/document'
+import { FIELD_LAYOUT_KEY, makeSafeContext } from '@/composables/useFieldLayout'
 
 import {
   Combobox,
@@ -332,23 +334,25 @@ import {
   DateTimePicker,
   TimePicker,
 } from 'frappe-ui'
-import { computed, provide, inject, ref } from 'vue'
+import { computed, provide, inject } from 'vue'
 
 const props = defineProps({
   field: { type: Object, required: true },
 })
 
+// ── Single envelope inject ─────────────────────────────────────────────────
+// FieldLayout provides this. Grid.vue re-provides an enriched version for grid rows.
+const ctx = inject(FIELD_LAYOUT_KEY, makeSafeContext())
+
+// data and hasTabs stay as separate lightweight inject keys (pure display).
 const data = inject('data')
-const doctype = inject('doctype')
-const docname = inject('docname', null)
-const preview = inject('preview')
-const isGridRow = inject('isGridRow')
+const preview = inject('preview', computed(() => false))
 
 // Guard getMeta — skip when doctype is empty (inline/standalone mode)
 let getFormattedPercent, getFormattedFloat, getFormattedCurrency
-if (doctype) {
+if (ctx.doctype) {
   ;({ getFormattedPercent, getFormattedFloat, getFormattedCurrency } =
-    getMeta(doctype))
+    getMeta(ctx.doctype))
 } else {
   getFormattedPercent = (fn, doc) => formatNumber(doc[fn], '', null) + '%'
   getFormattedFloat = (fn, doc) => formatNumber(doc[fn], '', null)
@@ -358,103 +362,63 @@ if (doctype) {
 
 const { users, getUser } = usersStore()
 
-let triggerOnChange
-let triggerButton
-let parentDoc
-const formDocument = ref(null)
+// ── Document binding (document mode only) ─────────────────────────────────
+// In standalone and grid-row modes, FieldLayout already resolved the triggers.
+// In document mode, Field.vue calls useDocument to enrich the context and
+// re-provide it so that Grid.vue below gets triggers too.
+if (!ctx.isGridRow && !ctx.formDocument && ctx.doctype) {
+  const resolvedName = ctx.docname || data?.value?.name || ''
+  const doc = useDocument(ctx.doctype, resolvedName)
 
-// Standalone mode: context injected from FieldLayout when context prop is set
-const standaloneContext = inject('fieldLayoutContext', null)
-
-if (standaloneContext) {
-  // Standalone mode — no useDocument, no scripting triggers
-  // Field changes update data directly
-  triggerOnChange = async (fieldname, value, row) => {
-    if (row) {
-      row[fieldname] = value
-    } else {
-      data.value[fieldname] = value
-    }
-  }
-  triggerButton = async () => {}
-  formDocument.value = standaloneContext
-
-  // Provide no-op triggers for child Grid components
-  provide('triggerOnChange', triggerOnChange)
-  provide('triggerButton', triggerButton)
-  provide('triggerOnRowAdd', async () => {})
-  provide('triggerOnRowRemove', async () => {})
-  provide(
-    'fieldPropertyOverrides',
-    computed(() => standaloneContext?.fieldPropertyOverrides || {}),
-  )
-} else if (!isGridRow) {
-  // Bind to the document by its authoritative name (injected from FieldLayout),
-  // falling back to data.name. Using data.name alone breaks the first edit of a
-  // freshly-loaded doc: name is still empty, so changes write to the wrong
-  // (new-document) cache slot and the first save serializes the pristine doc.
-  const resolvedName = docname != null ? docname.value : data.value.name
-  const {
-    triggerOnChange: trigger,
-    triggerButton: triggerBtn,
-    triggerOnRowAdd,
-    triggerOnRowRemove,
-    document: doc,
-  } = useDocument(doctype, resolvedName)
-  triggerOnChange = trigger
-  triggerButton = triggerBtn
-  formDocument.value = doc
-
-  provide('triggerOnChange', triggerOnChange)
-  provide('triggerButton', triggerButton)
-  provide('triggerOnRowAdd', triggerOnRowAdd)
-  provide('triggerOnRowRemove', triggerOnRowRemove)
-  provide(
-    'fieldPropertyOverrides',
-    computed(() => formDocument.value?.fieldPropertyOverrides || {}),
-  )
-} else {
-  triggerOnChange = inject('triggerOnChange', () => {})
-  triggerButton = inject('triggerButton', () => {})
-  parentDoc = inject('parentDoc')
+  // Enrich the context object in place — it's a plain object so mutation is fine.
+  ctx.triggerOnChange = doc.triggerOnChange
+  ctx.triggerButton = doc.triggerButton
+  ctx.triggerOnRowAdd = doc.triggerOnRowAdd
+  ctx.triggerOnRowRemove = doc.triggerOnRowRemove
+  Object.defineProperty(ctx, 'fieldPropertyOverrides', {
+    get() { return doc.document?.value?.fieldPropertyOverrides || {} },
+    configurable: true,
+  })
+  Object.defineProperty(ctx, 'formDocument', {
+    get() { return doc.document?.value },
+    configurable: true,
+  })
 }
 
-// For grid rows: inject overrides provided by Grid.vue
-const injectedOverrides = inject(
-  'fieldPropertyOverrides',
-  computed(() => ({})),
-)
-const injectedParentFieldname = inject('parentFieldname', '')
+// Re-provide the (potentially enriched) context so Grid.vue below sees it.
+provide(FIELD_LAYOUT_KEY, ctx)
 
-/**
- * Resolve field property overrides.
- * For grid row fields, uses dot notation (parentfield.childfield)
- * with per-row support (parentfield.childfield:rowName).
- * For normal fields, reads directly from formDocument.
- */
+// ── Field override resolution ─────────────────────────────────────────────
 function getFieldOverrides(fieldname) {
-  if (isGridRow) {
-    const ov = injectedOverrides.value || {}
-    const pf = injectedParentFieldname
+  if (ctx.isGridRow) {
+    const ov = ctx.fieldPropertyOverrides || {}
+    const pf = ctx.parentFieldname
     if (!pf) return undefined
 
     const colKey = `${pf}.${fieldname}`
     const rowName = data.value?.name
     const rowKey = rowName ? `${colKey}:${rowName}` : null
 
+    // Priority (lowest → highest): rules < perm < script column < script row.
+    const ruleOv = ctx.ruleOverrides?.[fieldname]
+    const permOv = ctx.permOverrides?.[fieldname]
     const colOv = ov[colKey]
     const rowOv = rowKey ? ov[rowKey] : null
 
-    if (!colOv && !rowOv) return undefined
-    return { ...(colOv || {}), ...(rowOv || {}) }
+    if (!ruleOv && !permOv && !colOv && !rowOv) return undefined
+    return { ...(ruleOv || {}), ...(permOv || {}), ...(colOv || {}), ...(rowOv || {}) }
   }
-  return formDocument.value?.fieldPropertyOverrides?.[fieldname]
+  // Priority (lowest → highest): rules < perm < script field.
+  const ruleOv = ctx.ruleOverrides?.[fieldname]
+  const permOv = ctx.permOverrides?.[fieldname]
+  const scriptOv = ctx.formDocument?.fieldPropertyOverrides?.[fieldname]
+  if (!ruleOv && !permOv && !scriptOv) return undefined
+  return { ...(ruleOv || {}), ...(permOv || {}), ...(scriptOv || {}) }
 }
 
 const field = computed(() => {
   let field = { ...props.field }
 
-  // ── Script property overrides ──
   const overrides = getFieldOverrides(field.fieldname)
   if (overrides) {
     Object.assign(field, overrides)
@@ -495,7 +459,6 @@ const field = computed(() => {
     data.value,
   )
 
-  // Script overrides for read_only take priority over depends_on
   const scriptReadOnly = overrides?.read_only
   const effectiveReadOnly =
     scriptReadOnly !== undefined
@@ -503,7 +466,6 @@ const field = computed(() => {
       : field.read_only ||
         (field.read_only_depends_on && read_only_via_depends_on)
 
-  // Script overrides for depends_on visibility
   const scriptHidden = overrides?.hidden
   const displayViaDependsOn = evaluateDependsOnValue(
     field.depends_on,
@@ -527,9 +489,8 @@ const field = computed(() => {
 })
 
 function isFieldVisible(field, scriptHidden) {
-  if (preview.value) return true
+  if (preview?.value) return true
 
-  // Script override for hidden wins over everything
   if (scriptHidden !== undefined) return !scriptHidden
 
   let readOnlyField =
@@ -550,7 +511,7 @@ function isFieldVisible(field, scriptHidden) {
 
 const resolvedHtml = computed(() => {
   if (field.value.fieldtype !== 'HTML') return ''
-  const injected = formDocument.value?.fieldHtmlMap?.[field.value.fieldname]
+  const injected = ctx.formDocument?.fieldHtmlMap?.[field.value.fieldname]
   if (injected !== undefined) return injected
   return interpolateTemplate(field.value.options || '', data.value)
 })
@@ -582,7 +543,7 @@ async function handleButtonClick(field) {
   if (typeof field.click === 'function') {
     return await field.click(data.value)
   } else {
-    return await triggerButton(field.fieldname)
+    return await ctx.triggerButton(field.fieldname)
   }
 }
 
@@ -593,13 +554,14 @@ async function fieldChange(value, df) {
       ? value.value
       : value
 
-  if (isGridRow) {
-    await triggerOnChange(df.fieldname, value, data.value)
+  if (ctx.isGridRow) {
+    await ctx.triggerOnChange(df.fieldname, value, data.value)
   } else {
-    await triggerOnChange(df.fieldname, value)
+    await ctx.triggerOnChange(df.fieldname, value)
   }
 }
 </script>
+
 <style scoped>
 :deep(.form-control.prefix select) {
   padding-left: 2rem;

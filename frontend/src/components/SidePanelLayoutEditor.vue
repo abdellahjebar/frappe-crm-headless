@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <Draggable :list="sections" item-key="name" class="flex flex-col gap-5.5">
       <template #item="{ element: section }">
@@ -95,7 +95,7 @@
                   class="w-full h-8 mt-1.5 !bg-surface-gray-1"
                   variant="outline"
                   :label="__('Add Field')"
-                  iconLeft="plus"
+                  iconLeft="lucide-plus"
                   @click="togglePopover()"
                 />
               </template>
@@ -125,7 +125,7 @@
         class="w-full h-8"
         variant="subtle"
         :label="__('Add Section')"
-        iconLeft="plus"
+        iconLeft="lucide-plus"
         @click="
           sections.push({
             label: __('New Section'),

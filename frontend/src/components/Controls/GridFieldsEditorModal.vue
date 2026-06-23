@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Dialog v-model:open="show">
     <template #title>
       <h3
@@ -59,7 +59,7 @@
             <Button
               class="w-full mt-2"
               :label="__('Add Field')"
-              iconLeft="plus"
+              iconLeft="lucide-plus"
               @click="togglePopover()"
             />
           </template>

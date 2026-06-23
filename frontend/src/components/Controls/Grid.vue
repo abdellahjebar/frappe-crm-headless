@@ -507,6 +507,7 @@ import {
   Combobox,
 } from 'frappe-ui'
 import Draggable from 'vuedraggable'
+import { FIELD_LAYOUT_KEY, makeSafeContext } from '@/composables/useFieldLayout'
 import { ref, reactive, computed, inject, provide } from 'vue'
 
 const props = defineProps({
@@ -526,14 +527,9 @@ const restrictedFieldTypes = [
   'Image',
 ]
 
-const triggerOnChange = inject('triggerOnChange', () => {})
-const triggerButton = inject('triggerButton', () => {})
-const triggerOnRowAdd = inject('triggerOnRowAdd', () => {})
-const triggerOnRowRemove = inject('triggerOnRowRemove', () => {})
-const parentFieldPropertyOverrides = inject(
-  'fieldPropertyOverrides',
-  computed(() => ({})),
-)
+// ── Single envelope inject ─────────────────────────────────────────────────
+// Inherit triggers and overrides from the parent Field.vue / FieldLayout.
+const parentCtx = inject(FIELD_LAYOUT_KEY, makeSafeContext())
 
 const {
   getGridViewSettings,
@@ -549,16 +545,31 @@ const { users, getUser } = usersStore()
 const rows = defineModel({ type: Array, default: () => [] })
 const parentDoc = defineModel('parent', { type: Object, default: () => ({}) })
 
-provide('parentDoc', parentDoc)
-provide('fieldPropertyOverrides', parentFieldPropertyOverrides)
-provide('parentFieldname', props.parentFieldname)
+// Build the grid-row context — extends the parent context with grid-specific state.
+// FieldLayout (inside GridRowModal) injects this and passes it to its Field.vue children.
+const gridRowCtx = {
+  ...parentCtx,
+  isGridRow: true,
+  get parentDoc() { return parentDoc.value },
+  get parentFieldname() { return props.parentFieldname },
+  get fieldPropertyOverrides() { return parentCtx.fieldPropertyOverrides || {} },
+}
+
+provide(FIELD_LAYOUT_KEY, gridRowCtx)
+
+// Convenience aliases used by Grid's own inline rendering (column cells).
+const triggerOnChange = parentCtx.triggerOnChange
+const triggerButton = parentCtx.triggerButton
+const triggerOnRowAdd = parentCtx.triggerOnRowAdd
+const triggerOnRowRemove = parentCtx.triggerOnRowRemove
+const parentFieldPropertyOverrides = computed(() => parentCtx.fieldPropertyOverrides || {})
 
 /**
  * Resolve field overrides for a specific row.
  * Priority: row-specific (products.qty:row_name) > column-level (products.qty) > base meta
  */
 function getRowFieldObj(field, row) {
-  const ov = parentFieldPropertyOverrides.value || {}
+  const ov = parentCtx.fieldPropertyOverrides || {}
   const colKey = `${props.parentFieldname}.${field.fieldname}`
   const rowKey = row?.name ? `${colKey}:${row.name}` : null
   const colOverrides = ov[colKey]

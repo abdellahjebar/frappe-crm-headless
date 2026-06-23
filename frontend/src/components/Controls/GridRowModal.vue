@@ -38,14 +38,12 @@
     </template>
   </Dialog>
 </template>
-
 <script setup>
 import EditIcon from '@/components/Icons/EditIcon.vue'
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
 import { usersStore } from '@/stores/users'
-import { createResource } from 'frappe-ui'
-import { nextTick, provide } from 'vue'
-
+import { nextTick } from 'vue'
+import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   index: { type: Number, default: 0 },
   data: { type: Object, default: () => ({}) },
@@ -53,17 +51,12 @@ const props = defineProps({
   parentDoctype: { type: String, default: '' },
   parentFieldname: { type: String, default: '' },
 })
-
 const { isManager } = usersStore()
-
-provide('parentFieldname', props.parentFieldname)
-
 const show = defineModel({ type: Boolean })
 const showGridRowFieldsModal = defineModel('showGridRowFieldsModal', {
   type: Boolean,
 })
-
-const tabs = createResource({
+const tabs = useQuery({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_fields_layout',
   cache: ['Grid Row', props.doctype, props.parentDoctype],
   params: {
@@ -73,7 +66,6 @@ const tabs = createResource({
   },
   auto: true,
 })
-
 function openGridRowFieldsModal() {
   showGridRowFieldsModal.value = true
   nextTick(() => (show.value = false))
