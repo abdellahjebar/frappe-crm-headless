@@ -146,6 +146,7 @@
       docsLink="https://docs.frappe.io/crm"
     />
     <IntermediateStepModal
+      v-if="showIntermediateModal"
       v-model="showIntermediateModal"
       :currentStep="currentStep"
     />
@@ -190,22 +191,26 @@ import { sessionStore } from '@/stores/session'
 import { showSettings, activeSettingsPage } from '@/composables/settings'
 import { showChangePasswordModal } from '@/composables/modals'
 import { useBroadcast } from '@/composables/useBroadcast.js'
-import { call } from 'frappe-ui'
+import { call } from '@/api/call'
 import {
   SignupBanner,
   TrialBanner,
   HelpModal,
   GettingStartedBanner,
-  useOnboarding,
-  showHelpModal,
-  minimize,
   IntermediateStepModal,
-  useTelemetry,
 } from 'frappe-ui/frappe'
+import { useTelemetry } from '@/composables/useTelemetry'
+import { useOnboarding } from '@/composables/useOnboarding'
 import router from '@/router'
 import { useStorage } from '@vueuse/core'
 import { useDemoData } from '@/composables/demoData'
 import { ref, reactive, computed, markRaw, onMounted } from 'vue'
+
+// Frappe Cloud singletons replaced with local refs — Frappe onboarding UI is
+// conditionally mounted (v-if isOnboardingStepsCompleted) and never renders
+// for non-Frappe adapters since useOnboarding returns completed=true.
+const showHelpModal = ref(false)
+const minimize = ref(false)
 
 const { getPinnedViews, getPublicViews } = viewsStore()
 const { toggle: toggleNotificationPanel } = notificationsStore()
