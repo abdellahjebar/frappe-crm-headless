@@ -25,7 +25,6 @@ import {
   insertTask,
   updateTask,
   deleteTask,
-  getEvents,
   insertEvent,
   updateEvent,
   deleteEvent,
@@ -105,7 +104,7 @@ import {
   if (user) {
     try {
       localStorage.setItem(`isOnboardingStepsCompletedfrappecrm${user}`, 'true')
-    } catch {}
+    } catch { /* noop */ }
   }
 })()
 
@@ -499,15 +498,6 @@ async function request(_method, endpoint, data, params) {
 
     case 'frappe.desk.like.toggle_like': {
       return { message: true }
-    }
-
-    // ── Form layout ─────────────────────────────────────────────────────────
-    case 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_fields_layout': {
-      if (m.doctype === 'CRM Lead') return { message: LEAD_LAYOUT }
-      if (m.doctype === 'CRM Deal') return { message: DEAL_LAYOUT }
-      if (m.doctype === 'FCRM Note') return { message: NOTE_LAYOUT }
-      if (m.doctype === 'CRM Call Log') return { message: CALL_LOG_LAYOUT }
-      return { message: [] }
     }
 
     case 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_sidepanel_sections': {
@@ -995,7 +985,7 @@ function tick() {
 
 // ─── Client-side CSV export ───────────────────────────────────────────────────
 
-function exportData({ doctype, fields, filters, format, pageLength, selectedItems }) {
+function exportData({ doctype, fields, filters, _format, pageLength, selectedItems }) {
   let parsedFields
   try { parsedFields = typeof fields === 'string' ? JSON.parse(fields) : (fields || []) } catch { parsedFields = [] }
 
@@ -1005,7 +995,7 @@ function exportData({ doctype, fields, filters, format, pageLength, selectedItem
     filterArray = Array.isArray(parsed)
       ? parsed
       : Object.entries(parsed).map(([k, v]) => [k, '=', v])
-  } catch {}
+  } catch { /* noop */ }
 
   const result = getData(doctype, { filters: filterArray, page_length: pageLength || 9999 })
   let rows = result.data

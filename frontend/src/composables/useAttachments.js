@@ -1,3 +1,4 @@
+import { useQuery } from '@/composables/useQuery'
 
 const pendingDeletionsMap = new Map()
 export function useAttachments(doctype, docname) {

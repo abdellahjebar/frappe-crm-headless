@@ -79,7 +79,7 @@ async function createOrganization() {
   loading.value = true
   error.value = null
   await triggerOnBeforeCreate?.()
-  let doc = null
+  let doc
   try {
     doc = await insertOrg.fetch({
       doc: {

@@ -14,8 +14,6 @@ import { MockAdapter } from './api/adapters/mock/index.js'
 
 import { FrappeUI, Button, Input, TextInput, FormControl, ErrorMessage, Dialog, Alert, Badge, setConfig, frappeRequest, FeatherIcon } from 'frappe-ui'
 
-import { useQuery } from '@/composables/useQuery'
-
 const globalComponents = {
   Button,
   TextInput,
@@ -64,7 +62,7 @@ if (import.meta.env.VITE_MOCK === 'true') {
           body = typeof init.body === 'string'
             ? Object.fromEntries(new URLSearchParams(init.body))
             : JSON.parse(init.body)
-        } catch {}
+        } catch { /* noop */ }
       }
       try {
         const result = await MockAdapter.request('POST', endpoint, body, {})

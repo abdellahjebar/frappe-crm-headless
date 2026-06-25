@@ -57,7 +57,7 @@ import { showAboutModal } from '@/composables/modals'
 import { confirmLoginToFrappeCloud } from '@/composables/frappecloud'
 import { Dropdown } from 'frappe-ui'
 import { computed, h, markRaw } from 'vue'
-import { sanitizeHTML } from '@/utils'
+import { sanitizeHTML, getSafeWebsiteUrl } from '@/utils'
 
 defineProps({
   isCollapsed: { type: Boolean, default: false },
