@@ -59,7 +59,6 @@ import { useTelemetry } from '@/composables/useTelemetry'
 import { ref, nextTick, onMounted } from 'vue'
 import { useQuery } from '@/composables/useQuery'
 import { useRouter } from 'vue-router'
-import { useQuery } from '@/composables/useQuery'
 const props = defineProps({
   data: { type: Object, default: () => ({}) },
   options: {
