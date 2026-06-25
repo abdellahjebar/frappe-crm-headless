@@ -41,7 +41,7 @@ const ListData = z.object({
 
 const SCHEMAS = {
   // Auth
-  'login':                                z.object({ token: z.string(), user: z.string() }),
+  'login':                                AuthResponse,
 
   // Users
   'crm.api.session.get_users':            z.array(User),

@@ -8,10 +8,10 @@
     @change="(v) => emit('change', v)"
     @blur="emit('blur')"
   >
-    <template #default="{ editor }">
+    <template #default="{ editor: frappe_editor }">
       <slot name="top" />
       <EditorFixedMenu v-if="fixedMenu && editable" :items="articleToolbar" />
-      <slot name="editor" :editor="editor">
+      <slot name="editor" :editor="frappe_editor">
         <EditorContent :class="editorClass" />
       </slot>
       <EditorBubbleMenu v-if="bubbleMenu && editable" :items="minimalToolbar" />

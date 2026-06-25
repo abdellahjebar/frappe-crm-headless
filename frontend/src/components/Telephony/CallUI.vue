@@ -117,7 +117,6 @@ watch(
   () =>
     nextTick(() => {
       for (const {
-        key,
         label,
         ref: integrationRef,
       } of enabledIntegrations.value) {

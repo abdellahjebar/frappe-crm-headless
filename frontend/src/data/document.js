@@ -8,7 +8,7 @@ import { findMissingMandatory } from '@/utils/fieldTransforms'
 import { toast } from 'frappe-ui'
 import { getAdapter } from '@/api'
 import { useQuery } from '@/composables/useQuery'
-import { ref, reactive, getCurrentInstance } from 'vue'
+import { ref, reactive } from 'vue'
 
 const documentsCache = {}
 const controllersCache = {}
@@ -146,7 +146,7 @@ export function useDoc(options) {
   return makeDocResource(options)
 }
 
-export function useDocument(doctype, docname, resourceOverrides = {}) {
+export function useDocument(doctype, docname, _resourceOverrides = {}) {
   if (typeof docname === 'number') docname = String(docname)
   const { setupScript, scripts } = getScript(doctype)
   const meta = getMeta(doctype)
@@ -155,7 +155,6 @@ export function useDocument(doctype, docname, resourceOverrides = {}) {
     docname,
   )
 
-  const vm = getCurrentInstance()?.proxy
   documentsCache[doctype] = documentsCache[doctype] || {}
 
   const error = ref('')

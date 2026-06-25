@@ -317,6 +317,7 @@ export function website(url) {
 
 export function htmlToText(html) {
   const div = document.createElement('div')
+  // eslint-disable-next-line no-unsanitized/property -- div is never inserted into DOM; innerHTML used only to parse text
   div.innerHTML = html
   return div.textContent || div.innerText || ''
 }
