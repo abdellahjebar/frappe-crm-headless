@@ -1,6 +1,6 @@
 ﻿<template>
   <span>
-    <a :href="isShowable ? null : url" target="_blank">
+    <a :href="isShowable ? null : (getSafeWebsiteUrl(url) || '#')" target="_blank">
       <Button
         :label="label"
         theme="gray"
@@ -30,6 +30,7 @@
 <script setup>
 import { ref } from 'vue'
 import mime from 'mime'
+import { getSafeWebsiteUrl } from '@/utils'
 import FileTypeIcon from '@/components/Icons/FileTypeIcon.vue'
 import FileImageIcon from '@/components/Icons/FileImageIcon.vue'
 import FileTextIcon from '@/components/Icons/FileTextIcon.vue'

@@ -31,7 +31,7 @@ const globalComponents = {
 // In dev mode, seed the user_id cookie so FrappeAdapter.getUser() and
 // frappe-ui components that read it directly see a valid user identity.
 if (import.meta.env.VITE_DEV_USER) {
-  document.cookie = `user_id=${import.meta.env.VITE_DEV_USER}; path=/`
+  document.cookie = `user_id=${import.meta.env.VITE_DEV_USER}; path=/; SameSite=Strict`
 }
 
 // Frappe normally injects window.frappe.boot at page load. frappe-ui's

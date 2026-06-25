@@ -32,7 +32,7 @@
         <a
           v-for="app in apps.data"
           :key="app.name"
-          :href="app.route"
+          :href="getSafeWebsiteUrl(app.route) || '#'"
           class="flex items-center gap-2 rounded p-1.5 hover:bg-surface-gray-2"
         >
           <img class="size-6" :src="app.logo" />
@@ -48,6 +48,7 @@
 import AppsIcon from '@/components/Icons/AppsIcon.vue'
 import { Popover } from 'frappe-ui'
 import { useQuery } from '@/composables/useQuery'
+import { getSafeWebsiteUrl } from '@/utils'
 defineProps({
   active: { type: Boolean, default: false },
 })

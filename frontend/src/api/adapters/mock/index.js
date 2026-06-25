@@ -115,7 +115,7 @@ const AUTH_KEY = '__crm_mock_user__'
 
 function mockLogin(email) {
   localStorage.setItem(AUTH_KEY, email)
-  document.cookie = `user_id=${email}; path=/`
+  document.cookie = `user_id=${email}; path=/; SameSite=Strict`
 }
 
 function mockLogout() {
@@ -837,17 +837,11 @@ async function request(_method, endpoint, data, params) {
             layout: { i: 1, x: 10, y: 0, w: 10, h: 6 },
             data: {
               title: 'Deals Pipeline',
-              data: [
-                { stage: 'Qualification', count: 4 },
-                { stage: 'Demo / Discovery', count: 3 },
-                { stage: 'Proposal', count: 3 },
-                { stage: 'Negotiation', count: 2 },
-                { stage: 'Closed Won', count: 2 },
-                { stage: 'Closed Lost', count: 1 },
-              ],
-              xAxis: { key: 'stage', type: 'category' },
-              yAxis: {},
-              series: [{ name: 'Deals', type: 'bar' }],
+              type: 'bar',
+              data: {
+                labels: ['Qualification', 'Demo', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'],
+                datasets: [{ name: 'Deals', values: [4, 3, 3, 2, 2, 1] }],
+              },
             },
           },
           {
@@ -856,15 +850,11 @@ async function request(_method, endpoint, data, params) {
             layout: { i: 2, x: 0, y: 6, w: 20, h: 6 },
             data: {
               title: 'Leads over Time',
-              data: [
-                { week: 'Jun 1', count: 3 },
-                { week: 'Jun 7', count: 7 },
-                { week: 'Jun 14', count: 5 },
-                { week: 'Jun 21', count: 10 },
-              ],
-              xAxis: { key: 'week', type: 'category' },
-              yAxis: {},
-              series: [{ name: 'Leads', type: 'line' }],
+              type: 'line',
+              data: {
+                labels: ['Jun 1', 'Jun 7', 'Jun 14', 'Jun 21'],
+                datasets: [{ name: 'Leads', values: [3, 7, 5, 10] }],
+              },
             },
           },
         ],

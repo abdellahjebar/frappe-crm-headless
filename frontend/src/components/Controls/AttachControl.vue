@@ -45,7 +45,7 @@
       </template>
       <a
         class="block min-w-0 truncate text-ink-gray-8 hover:underline"
-        :href="value"
+        :href="getSafeWebsiteUrl(value) || '#'"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -77,6 +77,7 @@
 import { ref, computed, useAttrs } from 'vue'
 import { Tooltip } from 'frappe-ui'
 import FilesUploader from '@/components/FilesUploader/FilesUploader.vue'
+import { getSafeWebsiteUrl } from '@/utils'
 
 defineOptions({ inheritAttrs: false })
 

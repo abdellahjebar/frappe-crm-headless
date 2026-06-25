@@ -2,12 +2,14 @@
   <iframe
     ref="iframeRef"
     :srcdoc="htmlContent"
+    sandbox="allow-popups allow-popups-to-escape-sandbox"
     class="prose-f block h-10 max-h-[500px] w-full"
   />
 </template>
 
 <script setup>
 import { ref, watch } from 'vue'
+import { sanitizeHTML } from '@/utils'
 
 const props = defineProps({
   content: { type: String, required: true },
@@ -224,7 +226,7 @@ const htmlContent = `
   </style>
 </head>
 <body>
-    <div ref="emailContentRef" class="email-content prose-f">${_content.value}</div>
+    <div ref="emailContentRef" class="email-content prose-f">${sanitizeHTML(_content.value)}</div>
 </body>
 </html>
 `

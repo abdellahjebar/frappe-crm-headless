@@ -57,6 +57,7 @@ import { showAboutModal } from '@/composables/modals'
 import { confirmLoginToFrappeCloud } from '@/composables/frappecloud'
 import { Dropdown } from 'frappe-ui'
 import { computed, h, markRaw } from 'vue'
+import { sanitizeHTML } from '@/utils'
 
 defineProps({
   isCollapsed: { type: Boolean, default: false },
@@ -103,7 +104,7 @@ function dropdownItemObj(item) {
   let _item = JSON.parse(JSON.stringify(item))
   let icon = _item.icon || 'external-link'
   if (typeof icon === 'string' && icon.startsWith('<svg')) {
-    icon = markRaw(h('div', { innerHTML: icon }))
+    icon = markRaw(h('div', { innerHTML: sanitizeHTML(icon) }))
   }
   _item.icon = icon
 
@@ -114,8 +115,10 @@ function dropdownItemObj(item) {
   return {
     icon: _item.icon,
     label: __(_item.label),
-    onClick: () =>
-      window.open(_item.route, _item.open_in_new_window ? '_blank' : ''),
+    onClick: () => {
+      const safe = getSafeWebsiteUrl(_item.route)
+      if (safe) window.open(safe, _item.open_in_new_window ? '_blank' : '')
+    },
   }
 }
 

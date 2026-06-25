@@ -197,7 +197,8 @@ defineProps({
 const list = defineModel({ type: Object })
 const { capture } = useTelemetry()
 function openFileInAnotherTab(url) {
-  window.open(url, '_blank')
+  const safe = getSafeWebsiteUrl(url)
+  if (safe) window.open(safe, '_blank')
 }
 function formatWhatsAppMessage(message) {
   // if message contains _text_, make it italic

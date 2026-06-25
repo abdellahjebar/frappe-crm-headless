@@ -83,7 +83,7 @@ import FileVideoIcon from '@/components/Icons/FileVideoIcon.vue'
 import { globalStore } from '@/stores/global'
 import { Tooltip } from 'frappe-ui'
 import { call } from '@/api/call'
-import { formatDate, timeAgo, convertSize, isImage } from '@/utils'
+import { formatDate, timeAgo, convertSize, isImage, getSafeWebsiteUrl } from '@/utils'
 
 defineProps({
   attachments: { type: Array, default: () => [] },
@@ -94,7 +94,8 @@ const emit = defineEmits(['reload'])
 const { $dialog } = globalStore()
 
 function openFile(attachment) {
-  window.open(attachment.file_url, '_blank')
+  const safe = getSafeWebsiteUrl(attachment.file_url)
+  if (safe) window.open(safe, '_blank')
 }
 
 function togglePrivate(fileName, isPrivate) {

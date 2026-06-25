@@ -300,9 +300,7 @@ function handleIncomingCall(call) {
   phoneNumber.value = call.parameters.From
   showCallPopup.value = true
   _call = call
-  _call.on('accept', (conn) => {
-    console.log('conn', conn)
-  })
+  _call.on('accept', () => {})
   // add event listener to call object
   call.on('cancel', handleDisconnectedIncomingCall)
   call.on('disconnect', handleDisconnectedIncomingCall)
@@ -431,9 +429,7 @@ function toggleCallWindow() {
 }
 watch(
   () => log.value,
-  (value) => {
-    if (value) console.log(value)
-  },
+  () => {},
   { immediate: true },
 )
 defineExpose({ makeOutgoingCall, setup: startupClient })

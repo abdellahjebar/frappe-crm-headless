@@ -155,12 +155,16 @@ describe('RESTAdapter — 401 handling', () => {
     globalThis.window.dispatchEvent = vi.fn()
   })
 
-  it('clears auth on 401', async () => {
+  it('clears auth on 401 and getUser returns null', async () => {
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ token: 'tok', user: 'u@test.com' }) })
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
     const { RESTAdapter } = await import('@/api/adapters/rest')
+    await RESTAdapter.auth.login('u@test.com', 'pass')
+    expect(RESTAdapter.auth.getUser()).toBe('u@test.com')
     await expect(RESTAdapter.request('GET', 'crm.api.session.get_users', {}))
       .rejects.toThrow('Session expired')
-    expect(globalThis.localStorage.getItem('crm_token')).toBeNull()
-    expect(globalThis.localStorage.getItem('crm_user')).toBeNull()
+    expect(RESTAdapter.auth.getUser()).toBeNull()
   })
 
   it('fires crm:auth:expired event on 401', async () => {
@@ -175,27 +179,20 @@ describe('RESTAdapter — 401 handling', () => {
 
 describe('RESTAdapter — auth', () => {
   beforeEach(() => {
-    globalThis.localStorage = {
-      _store: {},
-      getItem: (k) => globalThis.localStorage._store[k] ?? null,
-      setItem: (k, v) => { globalThis.localStorage._store[k] = v },
-      removeItem: (k) => { delete globalThis.localStorage._store[k] },
-    }
-    globalThis.localStorage._store = {}
+    vi.resetModules()
     globalThis.document = { cookie: '' }
     globalThis.window = globalThis.window || {}
     globalThis.window.dispatchEvent = vi.fn()
   })
 
-  it('login stores token and user', async () => {
+  it('login stores token in memory and getUser returns the user', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ token: 'abc123', user: 'user@test.com' }),
     })
     const { RESTAdapter } = await import('@/api/adapters/rest')
     await RESTAdapter.auth.login('user@test.com', 'password')
-    expect(globalThis.localStorage.getItem('crm_token')).toBe('abc123')
-    expect(globalThis.localStorage.getItem('crm_user')).toBe('user@test.com')
+    expect(RESTAdapter.auth.getUser()).toBe('user@test.com')
   })
 
   it('login throws on non-ok response', async () => {
@@ -205,12 +202,6 @@ describe('RESTAdapter — auth', () => {
     })
     const { RESTAdapter } = await import('@/api/adapters/rest')
     await expect(RESTAdapter.auth.login('bad@test.com', 'wrong')).rejects.toThrow('Invalid credentials')
-  })
-
-  it('getUser returns stored user', async () => {
-    globalThis.localStorage._store = { crm_user: 'user@test.com' }
-    const { RESTAdapter } = await import('@/api/adapters/rest')
-    expect(RESTAdapter.auth.getUser()).toBe('user@test.com')
   })
 
   it('getUser returns null when not logged in', async () => {

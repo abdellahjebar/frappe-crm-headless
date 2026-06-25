@@ -10,14 +10,18 @@
 import { config } from '@/config'
 import { validate } from '@/api/schemas'
 
-const TOKEN_KEY = 'crm_token'
-const USER_KEY  = 'crm_user'
+// Tokens are kept in-memory only — never written to localStorage or sessionStorage.
+// This means a page refresh requires re-authentication, but it prevents XSS from
+// stealing credentials via storage APIs. If your backend uses httpOnly cookies for
+// auth, you can remove the Authorization header injection below entirely.
+let _token = null
+let _user  = null
 
-const getToken = () => localStorage.getItem(TOKEN_KEY)
-const setToken = (t) => localStorage.setItem(TOKEN_KEY, t)
+const getToken = () => _token
+const setToken = (t) => { _token = t }
 const clearAuth = () => {
-  localStorage.removeItem(TOKEN_KEY)
-  localStorage.removeItem(USER_KEY)
+  _token = null
+  _user  = null
   // Notify the app so the router can redirect to login
   window.dispatchEvent(new CustomEvent('crm:auth:expired'))
 }
@@ -466,8 +470,8 @@ export const RESTAdapter = {
       }
       const { token, user } = await res.json()
       setToken(token)
-      localStorage.setItem(USER_KEY, user)
-      document.cookie = `user_id=${user}; path=/`
+      _user = user
+      document.cookie = `user_id=${user}; path=/; SameSite=Strict`
     },
 
     async logout() {
@@ -480,7 +484,7 @@ export const RESTAdapter = {
     },
 
     getUser() {
-      return localStorage.getItem(USER_KEY)
+      return _user
     },
   },
 }
