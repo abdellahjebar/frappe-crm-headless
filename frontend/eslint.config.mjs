@@ -4,6 +4,8 @@ import pluginVue from 'eslint-plugin-vue'
 import configPrettier from 'eslint-config-prettier'
 import vueParser from 'vue-eslint-parser'
 import globals from 'globals'
+import pluginSecurity from 'eslint-plugin-security'
+import pluginNoUnsanitized from 'eslint-plugin-no-unsanitized'
 
 export default [
   {
@@ -36,8 +38,22 @@ export default [
       'vue/attribute-hyphenation': 'off',
       'vue/v-on-event-hyphenation': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-vars': ['warn', {
+        varsIgnorePattern: '^_',
+        argsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+      }],
       'no-undef': 'error',
+    },
+  },
+  pluginSecurity.configs.recommended,
+  pluginNoUnsanitized.configs.recommended,
+  {
+    rules: {
+      // Too noisy for frontend: flags every obj[key] access (false positive)
+      'security/detect-object-injection': 'off',
+      // Flags Vite dynamic import() in router — these use known strings, not user input
+      'no-unsanitized/method': 'off',
     },
   },
   configPrettier,
