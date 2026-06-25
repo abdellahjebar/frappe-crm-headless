@@ -54,6 +54,9 @@ export default [
       'security/detect-object-injection': 'off',
       // Flags Vite dynamic import() in router — these use known strings, not user input
       'no-unsanitized/method': 'off',
+      // Timing attack detection is only relevant for Node.js server-side secret comparison,
+      // not browser === checks on route hashes and UI state booleans
+      'security/detect-possible-timing-attacks': 'off',
     },
   },
   configPrettier,

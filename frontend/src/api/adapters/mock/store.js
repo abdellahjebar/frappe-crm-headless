@@ -83,11 +83,13 @@ function applyFilter(record, [field, op, value]) {
     case '>=': return rv >= value
     case '<=': return rv <= value
     case 'like': {
-      const pattern = String(value).replace(/%/g, '.*')
+      const pattern = String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*')
+      // eslint-disable-next-line security/detect-non-literal-regexp -- pattern is escaped above
       return new RegExp(`^${pattern}$`, 'i').test(String(rv ?? ''))
     }
     case 'not like': {
-      const pattern = String(value).replace(/%/g, '.*')
+      const pattern = String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*')
+      // eslint-disable-next-line security/detect-non-literal-regexp -- pattern is escaped above
       return !new RegExp(`^${pattern}$`, 'i').test(String(rv ?? ''))
     }
     case 'in': return Array.isArray(value) ? value.includes(rv) : String(value).split(',').includes(String(rv))

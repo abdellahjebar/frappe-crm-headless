@@ -146,6 +146,7 @@ const workdayOptions = computed(() => {
 function formatTimeToHHMMSS(timeStr) {
   if (!timeStr) return ''
 
+  // eslint-disable-next-line security/detect-unsafe-regex -- simple bounded digits pattern, no backtracking risk
   const timeMatch = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/)
   if (!timeMatch) return ''
 

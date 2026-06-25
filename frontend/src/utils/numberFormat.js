@@ -89,15 +89,17 @@ function stripNumberGroups(v, numberFormat) {
   var info = getNumberFormatInfo(numberFormat)
 
   // strip groups (,)
+  // eslint-disable-next-line security/detect-non-literal-regexp -- separator is escaped before use
   var groupRegex = new RegExp(
-    info.groupSep === '.' ? '\\.' : info.groupSep,
+    info.groupSep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
     'g',
   )
   v = v.replace(groupRegex, '')
 
   // replace decimal separator with (.)
   if (info.decimalStr !== '.' && info.decimalStr !== '') {
-    var decimal_regex = new RegExp(info.decimalStr, 'g')
+    // eslint-disable-next-line security/detect-non-literal-regexp -- separator is escaped before use
+    var decimal_regex = new RegExp(info.decimalStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')
     v = v.replace(decimal_regex, '.')
   }
 

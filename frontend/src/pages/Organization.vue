@@ -300,6 +300,7 @@ function beforeFieldChange(data) {
   }
 }
 function website(url) {
+  // eslint-disable-next-line security/detect-unsafe-regex -- anchored URL prefix pattern, no backtracking risk
   return url && url.replace(/^(?:https?:\/\/)?(?:www\.)?/i, '')
 }
 function openWebsite() {

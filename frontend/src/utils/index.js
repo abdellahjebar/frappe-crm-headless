@@ -312,6 +312,7 @@ export function openWebsite(url) {
 }
 
 export function website(url) {
+  // eslint-disable-next-line security/detect-unsafe-regex -- anchored URL prefix pattern, no backtracking risk
   return url && url.replace(/^(?:https?:\/\/)?(?:www\.)?/i, '')
 }
 
@@ -327,9 +328,7 @@ export function startCase(str) {
 }
 
 export function validateEmail(email) {
-  let regExp =
-    /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-  return regExp.test(email)
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)
 }
 
 export function parseAssignees(assignees) {

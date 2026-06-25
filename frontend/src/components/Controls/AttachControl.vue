@@ -81,8 +81,8 @@ import { getSafeWebsiteUrl } from '@/utils'
 
 defineOptions({ inheritAttrs: false })
 
-const IMAGE_EXTENSIONS =
-  /\.(jpe?g|png|gif|webp|svg|avif|bmp|ico|tiff?)(\?.*)?$/i
+// eslint-disable-next-line security/detect-unsafe-regex -- hardcoded constant, not built from user input
+const IMAGE_EXTENSIONS = /\.(jpe?g|png|gif|webp|svg|avif|bmp|ico|tiff?)(\?.*)?$/i
 
 const props = defineProps({
   value: { type: String, default: null },
