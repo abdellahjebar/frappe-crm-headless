@@ -1,0 +1,116 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif">
+
+  <defs>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444"/>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#22c55e"/>
+    </marker>
+    <marker id="arr-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b5cf6"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#0d1117"/>
+
+  <!-- Title -->
+  <text x="600" y="42" text-anchor="middle" fill="#f1f5f9" font-size="22" font-weight="700">Frappe CRM — Frontend Architecture</text>
+  <text x="600" y="62" text-anchor="middle" fill="#475569" font-size="13">Decoupling 56,000 lines of UI from a single backend</text>
+
+  <!-- Center divider -->
+  <line x1="600" y1="75" x2="600" y2="555" stroke="#1e293b" stroke-width="1.5"/>
+
+  <!-- ===== LEFT: BEFORE ===== -->
+
+  <rect x="246" y="80" width="88" height="22" rx="11" fill="#2d1515"/>
+  <text x="290" y="95" text-anchor="middle" fill="#ef4444" font-size="11" font-weight="700" letter-spacing="1">BEFORE</text>
+
+  <!-- Box 1: CRM Frontend -->
+  <rect x="90" y="112" width="400" height="54" rx="10" fill="#0f1f35" stroke="#1d4ed8" stroke-width="1.5"/>
+  <text x="290" y="135" text-anchor="middle" fill="#93c5fd" font-size="14" font-weight="600">CRM Frontend</text>
+  <text x="290" y="154" text-anchor="middle" fill="#334155" font-size="11">Vue 3 · 311 components · 56,000 lines</text>
+
+  <!-- Arrow 1 -->
+  <line x1="290" y1="166" x2="290" y2="197" stroke="#ef4444" stroke-width="2" marker-end="url(#arr-red)"/>
+
+  <!-- Box 2: frappe-ui data layer -->
+  <rect x="90" y="200" width="400" height="78" rx="10" fill="#2d1515" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="290" y="224" text-anchor="middle" fill="#fca5a5" font-size="14" font-weight="600">frappe-ui data layer</text>
+  <text x="290" y="244" text-anchor="middle" fill="#7f1d1d" font-size="11">createResource · createListResource</text>
+  <text x="290" y="261" text-anchor="middle" fill="#7f1d1d" font-size="11">createDocumentResource</text>
+
+  <!-- Arrow 2 (dashed = locked) -->
+  <line x1="290" y1="278" x2="290" y2="309" stroke="#ef4444" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arr-red)"/>
+  <rect x="218" y="284" width="144" height="18" rx="4" fill="#1a0808"/>
+  <text x="290" y="296" text-anchor="middle" fill="#ef4444" font-size="10" font-weight="600">Frappe backend only</text>
+
+  <!-- Box 3: Frappe Backend -->
+  <rect x="90" y="312" width="400" height="72" rx="10" fill="#1a0808" stroke="#ef444450" stroke-width="1.5"/>
+  <text x="290" y="336" text-anchor="middle" fill="#fca5a590" font-size="14" font-weight="600">Frappe Backend</text>
+  <text x="290" y="356" text-anchor="middle" fill="#7f1d1d" font-size="11">Python · MariaDB · Redis</text>
+  <text x="290" y="374" text-anchor="middle" fill="#7f1d1d" font-size="11">No other backend possible</text>
+
+  <!-- Result note left -->
+  <rect x="90" y="410" width="400" height="36" rx="8" fill="#1a0808" stroke="#ef444425" stroke-width="1"/>
+  <text x="290" y="432" text-anchor="middle" fill="#ef444455" font-size="12">Want a different backend? Build a new product.</text>
+
+  <!-- ===== RIGHT: AFTER ===== -->
+
+  <rect x="666" y="80" width="88" height="22" rx="11" fill="#0f2a1a"/>
+  <text x="710" y="95" text-anchor="middle" fill="#22c55e" font-size="11" font-weight="700" letter-spacing="1">AFTER</text>
+
+  <!-- Box 1: CRM Frontend (identical) -->
+  <rect x="670" y="112" width="400" height="54" rx="10" fill="#0f1f35" stroke="#1d4ed8" stroke-width="1.5"/>
+  <text x="870" y="135" text-anchor="middle" fill="#93c5fd" font-size="14" font-weight="600">CRM Frontend</text>
+  <text x="870" y="154" text-anchor="middle" fill="#334155" font-size="11">Vue 3 · 311 components · 56,000 lines</text>
+
+  <!-- Arrow 1 -->
+  <line x1="870" y1="166" x2="870" y2="197" stroke="#22c55e" stroke-width="2" marker-end="url(#arr-green)"/>
+
+  <!-- Box 2: Our composables -->
+  <rect x="670" y="200" width="400" height="72" rx="10" fill="#0f2a1a" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="870" y="224" text-anchor="middle" fill="#86efac" font-size="14" font-weight="600">useQuery · useList · useDoc</text>
+  <text x="870" y="244" text-anchor="middle" fill="#166534" font-size="11">raw JS composables — no framework dependency</text>
+  <text x="870" y="261" text-anchor="middle" fill="#166534" font-size="11">230 unit tests</text>
+
+  <!-- Arrow 2 -->
+  <line x1="870" y1="272" x2="870" y2="303" stroke="#22c55e" stroke-width="2" marker-end="url(#arr-green)"/>
+
+  <!-- Box 3: Adapter Interface -->
+  <rect x="670" y="306" width="400" height="54" rx="10" fill="#1e1040" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="870" y="329" text-anchor="middle" fill="#c4b5fd" font-size="14" font-weight="600">Adapter Interface</text>
+  <text x="870" y="348" text-anchor="middle" fill="#4c1d95" font-size="11">setAdapter({ request, upload, auth })</text>
+
+  <!-- Branch lines -->
+  <line x1="870" y1="360" x2="870" y2="378" stroke="#8b5cf6" stroke-width="1.5"/>
+  <line x1="729" y1="378" x2="1011" y2="378" stroke="#8b5cf6" stroke-width="1.5"/>
+  <line x1="729" y1="378" x2="729" y2="398" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arr-purple)"/>
+  <line x1="870" y1="378" x2="870" y2="398" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arr-purple)"/>
+  <line x1="1011" y1="378" x2="1011" y2="398" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arr-purple)"/>
+
+  <!-- FrappeAdapter -->
+  <rect x="670" y="401" width="118" height="54" rx="8" fill="#0f1f35" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="729" y="423" text-anchor="middle" fill="#93c5fd" font-size="11" font-weight="600">FrappeAdapter</text>
+  <text x="729" y="441" text-anchor="middle" fill="#1e3a5f" font-size="10">backward compat</text>
+
+  <!-- RESTAdapter -->
+  <rect x="811" y="401" width="118" height="54" rx="8" fill="#0f2a1a" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="870" y="423" text-anchor="middle" fill="#86efac" font-size="11" font-weight="600">RESTAdapter</text>
+  <text x="870" y="441" text-anchor="middle" fill="#166534" font-size="10">any REST API</text>
+
+  <!-- MockAdapter -->
+  <rect x="952" y="401" width="118" height="54" rx="8" fill="#1e1040" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="1011" y="423" text-anchor="middle" fill="#c4b5fd" font-size="11" font-weight="600">MockAdapter</text>
+  <text x="1011" y="441" text-anchor="middle" fill="#4c1d95" font-size="10">zero backend</text>
+
+  <!-- Result note right -->
+  <rect x="670" y="480" width="400" height="36" rx="8" fill="#0f2a1a" stroke="#22c55e25" stroke-width="1"/>
+  <text x="870" y="502" text-anchor="middle" fill="#22c55e55" font-size="12">Any backend. One setAdapter() call before mount.</text>
+
+  <!-- Footer -->
+  <line x1="80" y1="545" x2="1120" y2="545" stroke="#1e293b" stroke-width="1"/>
+  <text x="600" y="568" text-anchor="middle" fill="#334155" font-size="12">github.com/abdellahjebar/frappe-crm-headless</text>
+
+</svg>
